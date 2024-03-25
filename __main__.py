@@ -3,6 +3,8 @@ import numpy as np
 from lxml import etree
 
 DATA = "data/trainData.txt"
+OPTIMIZE_SVGS = False
+BINS = 30
 
 
 def main():
@@ -16,16 +18,45 @@ def main():
     # X_scaled = preprocessing.normalize(X)
 
     # Plots histograms of the features
+
     plot_histograms(X, y)
 
     # # Plots of pairwise scatter plots of the features
     plot_scatter(X, y)
 
     # Apply PCA to the dataset
-    PCA_eigvec, PCA_data = pca(X)
+    PCA_eigvec, PCA_data = pca(X, X.shape[1])
 
     # Plots histograms of the PCA data
     plot_histograms_pca(PCA_data, y)
+
+    if OPTIMIZE_SVGS:
+        import os
+        import re
+
+        from scour import scour
+
+        # Optimize all SVGs under report/imgs
+        # FIXME: broken rn
+        for dirpath, _, files in os.walk("report/imgs"):
+            for file in files:
+                with open(os.path.join(dirpath, file), "r") as f:
+                    if not re.search(r"\.svg$", file):
+                        continue
+                    svg = f.read()
+
+                options = {
+                    "enable_viewboxing": True,
+                    "strip_ids": True,
+                    "strip_comments": True,
+                    "shorten_ids": True,
+                    "indent_type": "none",
+                }
+                clean_svg = scour.scourString(svg, options)
+
+                # Save the optimized SVG
+                with open(os.path.join(dirpath, file), "w") as f:
+                    f.write(clean_svg)
 
 
 def pca(X, m=None):
@@ -41,27 +72,20 @@ def pca(X, m=None):
 
     X = X - np.mean(X, axis=0)  # Center the data
 
-    eigval, eigvec = np.linalg.eig(np.cov(X.T))
+    _, eigvec = np.linalg.eigh(np.cov(X.T))
 
-    if m is not None:
-        # Sort eigenvalues and eigenvectors in descending order
-        idx = np.argsort(eigval)[::-1]
-        eigval = eigval[idx]
-        eigvec = eigvec[:, idx]
-    else:
-        m = X.shape[1]
+    # Reverse so that the eigen vectors are sorted in
+    # decreasing order and take the first m eigenvectors
+    PCA_eigvec = eigvec[:, ::-1][:, :m]
 
-    PCA_eigvec = eigvec[:, :m]
-    PCA_data = np.dot(X, PCA_eigvec)
-
-    return PCA_eigvec, PCA_data
+    return PCA_eigvec, np.dot(X, PCA_eigvec)
 
 
 def plot_histograms(X, y):
     for i in range(X.shape[1]):
         plt.hist(
             X.T[:, y == 0][i],
-            bins=10,
+            bins=BINS,
             density=True,
             alpha=0.4,
             label="Fake",
@@ -69,7 +93,7 @@ def plot_histograms(X, y):
         )
         plt.hist(
             X.T[:, y == 1][i],
-            bins=10,
+            bins=BINS,
             density=True,
             alpha=0.4,
             label="Genuine",
@@ -87,7 +111,7 @@ def plot_histograms_pca(PCA_data, y):
     for i in range(PCA_data.shape[1]):
         plt.hist(
             PCA_data.T[:, y == 0][i],
-            bins=10,
+            bins=BINS,
             density=True,
             alpha=0.4,
             label="Fake",
@@ -95,7 +119,7 @@ def plot_histograms_pca(PCA_data, y):
         )
         plt.hist(
             PCA_data.T[:, y == 1][i],
-            bins=10,
+            bins=BINS,
             density=True,
             alpha=0.4,
             label="Genuine",
@@ -168,8 +192,8 @@ def plot_scatter(X, y):
 
 def blend_svgs(svg1, svg2, path):
     # Parse the SVG files
-    tree1 = etree.parse(svg1)
-    tree2 = etree.parse(svg2)
+    tree1 = etree.parse(svg1, parser=None)
+    tree2 = etree.parse(svg2, parser=None)
 
     # Extract the root of each SVG file
     root1 = tree1.getroot()
