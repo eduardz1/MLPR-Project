@@ -101,7 +101,7 @@
         grid.cell(
           x: i,
           y: j,
-          image(strfmt("imgs/scatter/overlay_{}_{}.png", i, j))
+          image(strfmt("imgs/scatter/overlay_{}_{}.svg", i, j))
         )
       )
     } else {
@@ -178,7 +178,16 @@
 
   The last feature shows similar characteristics to the fifth feature.
 
-  #image("imgs/scatter/overlay_4_5.png")
+  #image("imgs/scatter/overlay_4_5.svg")
 
   Looking at the scatter plot we see that there are four distinct clusters for each of the labels, they overlap slightly at the edges of each cluster.
+
+  == PCA TODO
+
+  #image("imgs/hist/pca/histograms_0.svg")
+  #image("imgs/hist/pca/histograms_1.svg")
+  #image("imgs/hist/pca/histograms_2.svg")
+  #image("imgs/hist/pca/histograms_3.svg")
+  #image("imgs/hist/pca/histograms_4.svg")
+  #image("imgs/hist/pca/histograms_5.svg")
 ]

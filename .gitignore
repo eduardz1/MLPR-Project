@@ -1,5 +1,8 @@
 # VSCode
-./vscode/settings.json
+.vscode/settings.json
+
+# Images that can be regenarated
+*.svg
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
