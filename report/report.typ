@@ -1,6 +1,6 @@
 #import "@preview/oxifmt:0.2.0": strfmt
 
-#let title = [Report for the Machine Learning & Pattern Recognition Project]
+#let title = [Report for the Machine Learning \ & Pattern Recognition Project]
 #let author = (
   name: "Eduard Antonovic Occhipinti",
   id: 947847
@@ -14,7 +14,7 @@
 #set text(
   font: "New Computer Modern",
   lang: "en",
-  size: 12pt
+  size: 10pt
 )
 
 #set page(
@@ -168,7 +168,7 @@
 #pagebreak()
 
 #columns(2)[
-  == Features 5 and 6
+  === Features 5 and 6
 
   #image("imgs/hist/histograms_4.svg")
 
@@ -182,12 +182,60 @@
 
   Looking at the scatter plot we see that there are four distinct clusters for each of the labels, they overlap slightly at the edges of each cluster.
 
-  == PCA TODO
+  == Principal Component Analysis
 
-  #image("imgs/hist/pca/histograms_0.svg")
-  #image("imgs/hist/pca/histograms_1.svg")
-  #image("imgs/hist/pca/histograms_2.svg")
-  #image("imgs/hist/pca/histograms_3.svg")
-  #image("imgs/hist/pca/histograms_4.svg")
-  #image("imgs/hist/pca/histograms_5.svg")
+  #grid(
+    columns: 2,
+    rows: 3,
+    image("imgs/hist/pca/histograms_0.svg"),
+    image("imgs/hist/pca/histograms_1.svg"),
+    image("imgs/hist/pca/histograms_2.svg"),
+    image("imgs/hist/pca/histograms_3.svg"),
+    image("imgs/hist/pca/histograms_4.svg"),
+    image("imgs/hist/pca/histograms_5.svg")
+  )
+
+  Looking at the principal components of the dataset we can see that only one results in a clear separation between the two classes and it seems to separate the two classes better than any other feature taken individually.
+
+  == Linear Discriminant Analysis
+
+  #image("imgs/hist/lda/histograms_0.svg")
+
+  We see that compared to the first principal the classes are mirrored but the separation is similar between the two methods.
+
+  === Applying LDA as a classifier
+
+  We now try to apply LDA as a classifier, we start by splitting the dataset in a training and validation set, then we fit the model on the training and evaluation set, then we calculate the optimal threshold for the classifier and finally, we evaluate the model on the validation set.
+
+  ```python
+  # Split the dataset into training and validation sets
+  X_train, X_val, y_train, y_val = train_test_split(
+      X, y, test_size=0.33, random_state=0
+  )
+
+  # Fit the LDA model
+  _, X_train_lda = lda(X_train, y_train, 1)
+  _, X_val_lda = lda(X_val, y_val, 1)
+
+  threshold = (
+      X_train_lda[y_train == 0].mean() + X_train_lda[y_train == 1].mean()
+  ) / 2.0
+
+  # Predict the validation data
+  y_pred = [0 if x >= threshold else 1 for x in X_val_lda.T[0]]
+
+  print(f"Threshold: {threshold:.2f}")
+  print(f"Error rate: {np.sum(y_val != y_pred) / y_val.size * 100:.2f}%")
+  ```
+
+  ```
+  Threshold: -0.02
+  Error rate: 9.60%
+  ```
+
+  === Pre-Processing the Data with PCA
+
+  #image("imgs/error_rate_pca.svg")
+
+  As we can see from the graph, pre-processing the data with PCA proves useful in reducing the error rate of the classifier slightly, in particular when choosing a number `N` of components equal to 2.
 ]

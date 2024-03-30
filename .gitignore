@@ -3,6 +3,8 @@
 
 # Images that can be regenarated
 *.svg
+*.pdf
+!report.pdf
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
