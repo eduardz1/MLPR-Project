@@ -121,10 +121,10 @@
   columns(2)[
     = Introduction
 
-    The task consists in a binary classification problem, the goal is to perform fingerprint spoofing detection (i.e. to distinguish between real and fake fingerprints). 
+    The task consists of a binary classification problem, the goal is to perform fingerprint spoofing detection (i.e. to distinguish between real and fake fingerprints). 
     
     #box(height: 37pt)
-    The dataset consists of 6 features. In this first part we will analyze some statistics of the dataset and the correlation between the features.
+    The dataset consists of 6 features. In this first part, we will analyze some statistics of the dataset and the correlation between the features.
   ]
 )
 
@@ -145,7 +145,7 @@
 
   #image("imgs/hist/histograms_0.svg")
 
-  When looking at the first feature we can observe that the classes overlap almost completely. The `Genuine` label has higher variance than the `Fake` class but the mean is similar. Both classes exhibit one mode in the histogram but the `Fake` class has a higher peak.
+  When looking at the first feature we can observe that the classes overlap almost completely. The `Genuine` label has a higher variance than the `Fake` class but the mean is similar. Both classes exhibit one mode in the histogram but the `Fake` class has a higher peak.
 
   #image("imgs/hist/histograms_1.svg")
 
@@ -172,7 +172,7 @@
 
   #image("imgs/hist/histograms_4.svg")
 
-  The fifth feature also shows good distinction between the two classes with an overlap at the edges of the `Fake` class distribution. They exhibit similar variance but with a lower mean for the `Genuine` class. The `Fake` class peaks in 0 while the `Genuine` has two modes and peaks in -1 and 1.
+  The fifth feature also shows a good distinction between the two classes with an overlap at the edges of the `Fake` class distribution. They exhibit similar variance but with a lower mean for the `Genuine` class. The `Fake` class peaks in 0 while the `Genuine` has two modes and peaks in -1 and 1.
 
   #image("imgs/hist/histograms_5.svg")
 
@@ -233,7 +233,9 @@
   Error rate: 9.60%
   ```
 
-  === Pre-Processing the Data with PCA
+  Empirically we can find that threshold `0.04` gives a slightly better error rate of `9.34%`.
+
+  === Pre-processing the Data with PCA
 
   #image("imgs/error_rate_pca.svg")
 
