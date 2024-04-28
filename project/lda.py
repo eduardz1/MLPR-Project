@@ -1,14 +1,17 @@
 import numpy as np
+import numpy.typing as npt
 import scipy
 
 
-def lda(X, y, m):
+def lda(
+    X: npt.NDArray, y: npt.ArrayLike, m: int | None = None
+) -> tuple[npt.NDArray, npt.NDArray]:
     """Performs Linear Discriminant Analysis on the data matrix X
 
     Args:
-        X (array_like): [N x M] data matrix
-        y (array_like): [N x 1] label vector
-        m (uint, optional): number of features to keep with m <= M
+        X (NDArray): [N x M] data matrix
+        y (ArrayLike): [N x 1] label vector
+        m (int, optional): number of features to keep with m <= M
 
     Returns:
         The eigenvectors and LDA data matrix

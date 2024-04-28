@@ -1,4 +1,8 @@
+from typing import Callable
+
 import matplotlib.pyplot as plt
+import numpy as np
+import numpy.typing as npt
 from lxml import etree
 
 # overestimates for 5 and 6 and underestimates for the other
@@ -18,7 +22,6 @@ def plot_histograms(X, y, data_type):
             bins=BINS,
             density=True,
             alpha=0.4,
-            label="Fake",
             color="red",
         )
         plt.hist(
@@ -26,20 +29,15 @@ def plot_histograms(X, y, data_type):
             bins=BINS,
             density=True,
             alpha=0.4,
-            label="Genuine",
             color="blue",
         )
-        plt.legend()
         plt.tight_layout()
 
         if data_type == "lda":
-            plt.xlabel(f"Direction {i + 1}")
             plt.savefig(f"{IMG_FOLDER}/hist/lda/histograms_{i}.svg")
         elif data_type == "pca":
-            plt.xlabel(f"Principal Component {i + 1}")
             plt.savefig(f"{IMG_FOLDER}/hist/pca/histograms_{i}.svg")
         else:
-            plt.xlabel(f"Feature {i + 1}")
             plt.savefig(f"{IMG_FOLDER}/hist/histograms_{i}.svg")
 
         plt.clf()
@@ -70,27 +68,37 @@ def plot_scatter(X, y):
             xlim = [min(xlim_0[0], xlim_1[0]), max(xlim_0[1], xlim_1[1])]
             ylim = [min(ylim_0[0], ylim_1[0]), max(ylim_0[1], ylim_1[1])]
 
-            plt.scatter(X[y == 0][:, i], X[y == 0][:, j], alpha=0.6, color="red")
-            plt.xlabel(f"Feature {i + 1}")
-            plt.ylabel(f"Feature {j + 1}")
+            plt.scatter(
+                X[y == 0][:, i],
+                X[y == 0][:, j],
+                alpha=0.6,
+                color="red",
+                rasterized=True,
+            )
             plt.xlim(xlim)
             plt.ylim(ylim)
             plt.tight_layout()
             plt.savefig(
                 f"{IMG_FOLDER}/scatter/single/scatter_fake_{i}_{j}.svg",
                 transparent=True,
+                dpi=300,
             )
             plt.clf()
 
-            plt.scatter(X[y == 1][:, i], X[y == 1][:, j], alpha=0.6, color="blue")
-            plt.xlabel(f"Feature {i + 1}")
-            plt.ylabel(f"Feature {j + 1}")
+            plt.scatter(
+                X[y == 1][:, i],
+                X[y == 1][:, j],
+                alpha=0.6,
+                color="blue",
+                rasterized=True,
+            )
             plt.xlim(xlim)
             plt.ylim(ylim)
             plt.tight_layout()
             plt.savefig(
                 f"{IMG_FOLDER}/scatter/single/scatter_genuine_{i}_{j}.svg",
                 transparent=True,
+                dpi=300,
             )
             plt.clf()
 
@@ -101,15 +109,46 @@ def plot_scatter(X, y):
             )
 
 
-def plot_plot(X, y):
-    plt.figure(figsize=FIG_SIZE)
+def plot_error_rates(X: npt.NDArray, y: npt.ArrayLike) -> None:
+    plt.figure(figsize=(8, 3))
 
     plt.plot(range(1, X.shape[1] + 1), y, marker="o")
-    plt.xlabel("Number of Principal Components")
-    plt.ylabel("Error Rate (%)")
     plt.tight_layout()
     plt.savefig(f"{IMG_FOLDER}/error_rate_pca.svg")
     plt.clf()
+
+
+def plot_gaussian_densities(
+    X: npt.NDArray,
+    y: npt.ArrayLike,
+    means: npt.NDArray,
+    vars: npt.NDArray,
+    logpdf: Callable[[npt.NDArray, npt.NDArray, npt.NDArray], npt.NDArray],
+):
+    for i in np.unique(y):
+        for j in range(X.shape[1]):
+            plt.figure(figsize=FIG_SIZE)
+
+            color = "red" if i == 0 else "blue"
+            x = np.linspace(X[y == i][:, j].min(), X[y == i][:, j].max(), 100)
+
+            plt.hist(
+                X[y == i][:, j],
+                bins=BINS,
+                density=True,
+                alpha=0.4,
+                color=color,
+            )
+
+            plt.plot(
+                x,
+                np.exp(logpdf(x, means[i][j], vars[i][j])),
+                color=color,
+            )
+
+            plt.tight_layout()
+            plt.savefig(f"{IMG_FOLDER}/densities/density_{i}_{j}.svg")
+            plt.clf()
 
 
 def blend_svgs(svg1, svg2, path):

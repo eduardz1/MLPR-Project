@@ -2,13 +2,20 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 from project.lda import lda
+from project.logpdf import log_pdf
 from project.pca import pca
-from project.plots import plot_histograms, plot_plot, plot_scatter
+from project.plots import (
+    plot_error_rates,
+    plot_gaussian_densities,
+    plot_histograms,
+    plot_scatter,
+)
 
 DATA = "data/trainData.txt"
 CONF = {
-    "lab2": True,
-    "lab3": True,
+    "lab2": False,
+    "lab3": False,
+    "lab4": True,
 }
 
 
@@ -83,7 +90,25 @@ def lab3():
         # Calculate the error rate
         error_rates_pca.append(np.sum(y_val != y_pred) / y_val.size * 100)
 
-    plot_plot(X, error_rates_pca)
+    plot_error_rates(X, error_rates_pca)
+
+
+def lab4():
+    dataset = np.loadtxt(DATA, delimiter=",")
+    X = dataset[:, :-1]
+    y = dataset[:, -1].astype(int)
+    classes = np.unique(y)
+
+    means = np.array([np.mean(X[y == c], axis=0) for c in classes])
+
+    # If we want to analyze the data ina uni-variate way Covariance(X, X) = Var(X)
+    vars = np.array([np.var(X[y == c], axis=0) for c in classes])
+
+    plot_gaussian_densities(X, y, means, vars, log_pdf)
+
+    print("ML estimates for the parameters are:")
+    print(f"Means: {means}")
+    print(f"Vars: {vars}")
 
 
 def main():
@@ -92,6 +117,9 @@ def main():
 
     if CONF["lab3"]:
         lab3()
+
+    if CONF["lab4"]:
+        lab4()
 
 
 if __name__ == "__main__":
