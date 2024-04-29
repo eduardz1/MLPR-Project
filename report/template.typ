@@ -14,7 +14,7 @@
   show figure.caption: set text(size: 0.8em)
   set enum(indent: 10pt, body-indent: 9pt)
   set list(indent: 10pt, body-indent: 9pt, marker: ([•], [--]))
- show figure.caption: emph
+  show figure.caption: emph
 
   set heading(numbering: clean_numbering("I -", "1.a."))
   show heading: it => if it.level != 1 {
@@ -51,6 +51,7 @@
     ]
   }
 
+  set table(stroke: none)
 
   show raw.where(block: true): set text(size: 0.7em, font: "Fira Code")
   show raw.where(block: true): set par(justify: false)
@@ -62,13 +63,27 @@
   )
 
   set align(center)
+  set page(header: [
+    #set align(right)
+    #rect(stroke: 0.5pt + gray)[
+      #grid(
+        align: left,
+        gutter: 0.5em,
+        columns: 2,
+        rect(fill: red.transparentize(30%), width: 30pt, height: 1em),
+        [Fake],
+        rect(fill: blue.transparentize(30%), width: 30pt, height: 1em),
+        [Genuine],
+      )
+    ]
+  ])
 
   line(length: 100%)
 
   block()[
     #smallcaps(
       text(
-        size: 1.5em,
+        size: 1.6em,
         weight: "bold",
         title,
       ),
@@ -77,18 +92,8 @@
 
   line(length: 100%)
 
-  [
-    #set align(right)
-    #grid(
-      align: left,
-      gutter: 0.5em,
-      columns: 2,
-      rect(fill: red.transparentize(30%), width: 30pt, height: 1em),
-      [Fake],
-      rect(fill: blue.transparentize(30%), width: 30pt, height: 1em),
-      [Genuine],
-    )
-  ]
+
+  v(1fr)
 
   block()[
     *#author.name* \

@@ -1,7 +1,6 @@
 #import "@preview/oxifmt:0.2.0": strfmt
 #import "template.typ": *
 #import "funcs.typ": *
-#import "@preview/hydra:0.4.0": hydra
 
 #show: template
 
@@ -66,14 +65,9 @@
 
 #v(1fr)
 
-#set page(header: context {
-  if calc.odd(here().page()) {
-    align(right, emph(hydra(1)))
-  } else {
-    align(left, emph(hydra(2)))
-  }
-  line(length: 100%, stroke: 0.5pt + gray)
-})
+#set page(
+  header: align(right, text(fill: gray)[`Report for lab 2`]),
+)
 
 = Features Compared
 == Features 1 and 2
@@ -88,6 +82,8 @@
   Looking at the second feature we can notice the opposite behavior. The `Fake` class has a higher variance than the `Genuine` class but the mean is similar. Both classes exhibit one mode in the histogram but
   the `Genuine` class has a higher peak. Again, the classes overlap almost completely.
 ]
+
+#line(length: 100%, stroke: 0.5pt + gray)
 
 == Features 3 and 4
 #grid(
@@ -115,11 +111,18 @@
   The last feature shows similar characteristics to the fifth feature.
 ]
 
+#line(length: 100%, stroke: 0.5pt + gray)
+
 #figure(image("imgs/scatter/overlay_4_5.svg"), caption: [Features 5 and 6 Scatter Plot])
 
 Looking at the scatter plot we see that there are four distinct clusters for each of the labels, they overlap slightly at the edges of each cluster.
 
+#set page(
+  header: align(right, text(fill: gray)[`Report for lab 3`]),
+)
+
 = PCA & LDA
+
 #eqcolumns(2)[
   == Principal Component Analysis
 
@@ -194,6 +197,10 @@ Looking at the scatter plot we see that there are four distinct clusters for eac
 
 #pagebreak()
 
+#set page(
+  header: align(right, text(fill: gray)[`Report for lab 4`]),
+)
+
 = ML Estimates & Probability Densities
 
 == Gaussian Models
@@ -248,7 +255,6 @@ Looking at the scatter plot we see that there are four distinct clusters for eac
   #table(
     columns: (auto, 1fr, 1fr),
     align: center + horizon,
-    stroke: none,
     table.hline(stroke: 0.5pt),
     table.cell(fill: luma(250), colspan: 3, [#text(size: 1.2em, $bold(mu_("ML"))$)], inset: 1em),
     table.hline(stroke: 0.5pt + gray),
@@ -279,7 +285,6 @@ Looking at the scatter plot we see that there are four distinct clusters for eac
   #table(
     columns: (auto, 1fr, 1fr),
     align: center + horizon,
-    stroke: none,
     table.hline(stroke: 0.5pt),
     table.cell(fill: luma(250), colspan: 3, [#text(size: 1.2em, $bold(sigma^2_("ML"))$)], inset: 1em),
     table.hline(stroke: 0.5pt + gray),
@@ -288,22 +293,53 @@ Looking at the scatter plot we see that there are four distinct clusters for eac
     [*Genuine*],
     [1],
     [#text(size: 0.8em, $0.56958105$)],
-    [#text(size: 0.8em, $1.42086571$)],
-    [2],
-    [#text(size: 0.8em, $0.5489026$)],
-    [#text(size: 0.8em, $0.55334275$)],
-    [3],
-    [#text(size: 0.8em, $0.6800736$)],
-    [#text(size: 0.8em, $0.70503844$)],
-    [4],
     [#text(size: 0.8em, $1.43023345$)],
+    [2],
+    [#text(size: 0.8em, $1.42086571$)],
+    [#text(size: 0.8em, $0.57827792$)],
+    [3],
+    [#text(size: 0.8em, $0.54997702$)],
+    [#text(size: 0.8em, $0.54890260$)],
+    [4],
+    [#text(size: 0.8em, $0.53604266$)],
     [#text(size: 0.8em, $0.57827792$)],
     [5],
-    [#text(size: 0.8em, $0.5489026$)],
-    [#text(size: 0.8em, $1.31776792$)],
+    [#text(size: 0.8em, $0.68007360$)],
+    [#text(size: 0.8em, $0.55334275$)],
     [6],
     [#text(size: 0.8em, $0.70503844$)],
     [#text(size: 0.8em, $1.28702609$)],
+    table.hline(stroke: 0.5pt),
+  )
+]
+
+#pagebreak(weak: true)
+
+#set page(
+  header: align(right, text(fill: gray)[`Report for lab 5`]),
+)
+
+= Generative Models for Classification
+
+#align(center)[
+  #table(
+    columns: 4,
+    align: center + horizon,
+    table.hline(stroke: 0.5pt),
+    inset: 1em,
+    table.cell(fill: luma(250), []),
+    table.cell(fill: luma(250), [*Multi Variate Gaussian*], inset: 1em),
+    table.cell(fill: luma(250), [*Tied Gaussian*], inset: 1em),
+    table.cell(fill: luma(250), [*Naive Bayes*], inset: 1em),
+    table.hline(stroke: 0.5pt + gray),
+    [*Accuracy*],
+    [92.47%],
+    [90.35%],
+    [92.37%],
+    [*Error Rate*],
+    [7.53%],
+    [9.65%],
+    [7.63%],
     table.hline(stroke: 0.5pt),
   )
 ]
