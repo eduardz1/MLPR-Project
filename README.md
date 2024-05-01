@@ -1,11 +1,51 @@
 # Project
 
+## Building
+
+To only run the Python code, create a virtual environment (recommended) and install the dependencies:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+Afterwards you can run the Python module with:
+
+    
+```bash
+python -m project
+```
+
+All the plots will be saved under [the images directory](report/imgs).
+
+---
+
+To build the report you will need to have **Node** and **Typst** installed. Node is used to optimize the SVG images through the `svgo` utility to make the PDF smaller (the Python alternatives work very poorly in comparison). Typst is a more modern, faster, and nicer-to-use alternative to LaTeX.
+
+`svgo` can be installed with:
+
+```bash
+npm install -g svgo
+```
+
+To install `typst` refer to its [GitHub page](https://github.com/typst/typst?tab=readme-ov-file#installation).
+
+The report can then be built by running:
+
+```bash
+make
+```
+
+## Description
+
 The project task consists of a binary classification problem. The goal is to perform fingerprint spoofing
 detection, i.e. to identify genuine vs counterfeit fingerprint images. The dataset consists of labeled
 samples corresponding to the genuine (True, label 1) class and the fake (False, label 0) class. The
 samples are computed by a feature extractor that summarizes high-level characteristics of a fingerprint
 image. The data is 6-dimensional.
 The training files for the project are stored in file Project/trainData.txt. The format of the file is
+
 the same as for the Iris dataset, i.e. a csv file where each row represents a sample. The first 6 values of
 each row are the features, whereas the last value of each row represents the class (1 or 0). The samples
 are not ordered.

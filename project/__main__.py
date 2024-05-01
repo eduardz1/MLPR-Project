@@ -5,9 +5,9 @@ from project.labs.lab05 import lab5
 
 DATA = "data/trainData.txt"
 CONF = {
-    "lab2": False,
-    "lab3": False,
-    "lab4": False,
+    "lab2": True,
+    "lab3": True,
+    "lab4": True,
     "lab5": True,
 }
 
