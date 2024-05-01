@@ -39,7 +39,7 @@ def lda(
     # Compute the within-class covariance matrix
     Sw = np.average(
         [   # ndmin=2 to handle the case where there is only one dimension
-            np.array(np.cov(X[y == c].T), ndmin=2)
+            np.array(np.cov(X[y == c].T, bias=True), ndmin=2)
             for c in unique_labels
         ],
         axis=0,

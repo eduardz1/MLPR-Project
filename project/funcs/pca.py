@@ -16,7 +16,7 @@ def pca(X: npt.NDArray, m: int | None = None) -> tuple[npt.NDArray, npt.NDArray]
         PCA_data: [N x m] matrix with the PCA data
     """
 
-    _, eigvec = np.linalg.eigh(np.cov(X.T))
+    _, eigvec = np.linalg.eigh(np.cov(X.T, bias=True))
 
     # Reverse so that the eigen vectors are sorted in
     # decreasing order and take the first m eigenvectors
