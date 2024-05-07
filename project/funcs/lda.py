@@ -14,10 +14,10 @@ def lda(
         m (int, optional): number of features to keep with m <= M
 
     Returns:
-        The eigenvectors and LDA data matrix
+        The directions and LDA data matrix
 
-        LDA_eigvec: [M x m] matrix with the eigenvectors of the covariance matrix
-        LDA_data: [N x m] matrix with the LDA data
+        directions: [M x m] matrix with the eigenvectors of the covariance matrix
+        LDA_data: [N x m] matrix with the data projected onto the LDA directions
     """
 
     unique_labels = np.unique(y)
@@ -52,6 +52,6 @@ def lda(
 
     # Reverse so that the eigen vectors are sorted in
     # decreasing order and take the first m eigenvectors
-    LDA_eigvec = eigvec[:, ::-1][:, :m]
+    directions = eigvec[:, ::-1][:, :m]
 
-    return LDA_eigvec, np.dot(X, LDA_eigvec)
+    return directions, np.dot(X, directions)

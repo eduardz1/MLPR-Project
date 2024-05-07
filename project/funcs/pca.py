@@ -12,14 +12,14 @@ def pca(X: npt.NDArray, m: int | None = None) -> tuple[npt.NDArray, npt.NDArray]
     Returns:
         The eigenvectors and PCA data matrix
 
-        PCA_eigvec: [M x m] matrix with the eigenvectors of the covariance matrix
-        PCA_data: [N x m] matrix with the PCA data
+        directions: [M x m] matrix with the eigenvectors of the covariance matrix
+        PCA_data: [N x m] matrix with the data projected onto the PCA directions
     """
 
     _, eigvec = np.linalg.eigh(np.cov(X.T, bias=True))
 
     # Reverse so that the eigen vectors are sorted in
     # decreasing order and take the first m eigenvectors
-    PCA_eigvec = eigvec[:, ::-1][:, :m]
+    directions = eigvec[:, ::-1][:, :m]
 
-    return PCA_eigvec, np.dot(X, PCA_eigvec)
+    return directions, np.dot(X, directions)
