@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 from lxml import etree
+from tqdm import tqdm, trange
 
 # overestimates for 5 and 6 and underestimates for the other
 # features when compared to the friedman-diaconis rule but it's
@@ -21,7 +22,7 @@ def config(figsize: tuple[int, int] = FIG_SIZE):
 def plot_histograms(X, y, data_type):
     config()
 
-    for i in range(X.shape[1]):
+    for i in trange(X.shape[1], desc="Plotting histograms"):
         plt.hist(
             X.T[:, y == 0][i],
             bins=BINS,
@@ -51,9 +52,11 @@ def plot_histograms(X, y, data_type):
 def plot_scatter(X, y):
     config()
 
-    for i in range(X.shape[1]):
-        for j in range(
-            X.shape[1]
+    for i in trange(X.shape[1], desc="Plotting scatter plots"):
+        for j in trange(
+            X.shape[1],
+            desc=f"Feature {i}",
+            leave=False,
         ):  # generates duplicates but it's easier to work with in typst
             if i == j:
                 continue
@@ -132,7 +135,7 @@ def plot_gaussian_densities(
 ):
     config()
 
-    for i in np.unique(y):
+    for i in tqdm(np.unique(y), desc="Plotting gaussian densities"):
         for j in range(X.shape[1]):
             color = "red" if i == 0 else "blue"
             x = np.linspace(X[y == i][:, j].min(), X[y == i][:, j].max(), 100)

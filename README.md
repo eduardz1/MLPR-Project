@@ -12,16 +12,29 @@ pip install -r requirements.txt
 
 Afterwards you can run the Python module with:
 
-    
 ```bash
 python -m project
 ```
 
 All the plots will be saved under [the images directory](report/imgs).
 
+### Configuration
+
+To configure the project you can either manually change the constants defined in [the module's main](project/__main__.py) or pass the labs to be compiled as command line arguments.
+
+By default, the project will compile all the labs but not the PDF report. To view all the available options run:
+
+```bash
+python -m project --help
+```
+
 ---
 
-To build the report you will need to have **Node** and **Typst** installed. Node is used to optimize the SVG images through the `svgo` utility to make the PDF smaller (the Python alternatives work very poorly in comparison). Typst is a more modern, faster, and nicer-to-use alternative to LaTeX.
+To build the report you can either:
+
+- Set the `compile_pdf` flag, as mentioned before in [Configuration](#configuration)
+- Pass the CLI argument `--compile_pdf`
+- Compile it manually, for this, you will need to have **Node** and **Typst** installed. Node is used to optimize the SVG images through the `svgo` utility to make the PDF smaller (the Python alternatives work very poorly in comparison). Typst is a more modern, faster, and nicer-to-use alternative to LaTeX.
 
 `svgo` can be installed with:
 
@@ -53,14 +66,14 @@ Load the dataset and plot the histogram and pair-wise scatter plots of the diffe
 the plots.
 
 1. Analyze the first two features. What do you observe? Do the classes overlap? If so, where? Do the
-classes show similar mean for the first two features? Are the variances similar for the two classes?
-How many modes are evident from the histograms (i.e., how many “peaks” can be observed)?
+   classes show similar mean for the first two features? Are the variances similar for the two classes?
+   How many modes are evident from the histograms (i.e., how many “peaks” can be observed)?
 2. Analyze the third and fourth features. What do you observe? Do the classes overlap? If so, where?
-Do the classes show similar mean for these two features? Are the variances similar for the two
-classes? How many modes are evident from the histograms?
+   Do the classes show similar mean for these two features? Are the variances similar for the two
+   classes? How many modes are evident from the histograms?
 3. Analyze the last two features. What do you observe? Do the classes overlap? If so, where? How
-many modes are evident from the histograms? How many clusters can you notice from the scatter
-plots for each class?
+   many modes are evident from the histograms? How many clusters can you notice from the scatter
+   plots for each class?
 
 ---
 

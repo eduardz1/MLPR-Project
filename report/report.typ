@@ -123,7 +123,7 @@ Looking at the scatter plot we see that there are four distinct clusters for eac
 
 = PCA & LDA
 
-#eqcolumns(2)[
+#columns(2)[
   == Principal Component Analysis
 
   #figure(
@@ -140,7 +140,7 @@ Looking at the scatter plot we see that there are four distinct clusters for eac
     ),
   )
 
-  Looking at the principal components of the dataset we can see that only one results in a clear separation between the two classes and it seems to separate the two classes better than any other feature taken individually.
+  Looking at the principal components of the dataset we can see that only one results in a clear separation between the two classes and it seems to separate the two classes better than any other feature taken individually. The rotation makes it harder to see the clusters, if we were to plot the data in 6D we would see the same original clusters.
 
   == Linear Discriminant Analysis
 
@@ -342,4 +342,38 @@ Looking at the scatter plot we see that there are four distinct clusters for eac
     [7.63%],
     table.hline(stroke: 0.5pt),
   )
+]
+
+\
+
+The table above summarizes the various results, showing that the `Multi Variate Gaussian` model performs the best with an accuracy of `92.47%` and an error rate of `7.53%`. The difference between all the models is not too meaningful, however.
+
+\
+
+#columns(2)[
+  == Covariance Matrices for Fake and Genuine Classes
+
+  #box(inset: 1em)[
+    #align(center)[
+      \
+      $C_("Fake") = mat(
+        0.5552, space space 0.0182, 0.0092, space space 0.0113, space space 0.0187, space space 0.0013;
+        0.0182, space space 1.3786, 0.0181, -0.0051, space space 0.0198, -0.0262;
+        0.0096, space space 0.0181, 0.5682, space space 0.0319, -0.0143, space space 0.0112;
+        0.0113, -0.0051,  0.0319, 0.5230,  space space 0.0092,  space space 0.0094;
+        0.0187,  space space 0.0198, -0.0143, 0.0092, space space 0.6811, space space 0.0157;
+        0.0013, -0.0262, 0.0112, 0.0094, space space 0.0157, space space 0.7059
+      ) \
+      C_("Genuine") = mat(
+        space space 1.4198, space space 0.0036, -0.0137, space space 0.0213, -0.0249, -0.0592;
+        space space 0.0036, space space 0.6069, -0.0066, -0.0100, space space 0.0260, -0.0022;
+        -0.0137, -0.0066, space space 0.5448, space space 0.0046, -0.0106, -0.0198;
+        space space 0.0213, -0.0099, space space 0.0046, space space 0.5530, -0.0100, space space 0.0144;
+        -0.0249, space space 0.0260, -0.0106, -0.0101, space space 1.3095, -0.0242;
+        -0.0592, -0.0022, -0.0198, space space 0.0144, -0.0242, space space 1.2761
+      )$
+    ]
+  ]
+
+  To better visualize the correlations we can view a heatmap of the data
 ]

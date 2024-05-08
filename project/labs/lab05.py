@@ -40,6 +40,25 @@ def lab5(DATA: str):
     print(f"Accuracy: {accuracy:.2f}%")
     print(f"Error rate: {error_rate:.2f}%")
 
+    # Display the covariance matrix of each class
+    classes = np.unique(y_val)
+    covariances = {k: np.cov(X_train[:, y_train == k], bias=True) for k in classes}
+
+    print("\nCovariance matrices of each class:")
+    print(covariances)
+
+    # Plot covariances as heatmaps
+
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+
+    fig, axs = plt.subplots(1, len(classes), figsize=(15, 5))
+    for i, c in enumerate(classes):
+        sns.heatmap(covariances[c], ax=axs[i], annot=True)
+        axs[i].set_title(f"Class {c}")
+
+    plt.show()
+
 
 def apply_mvg(X_train, X_val, y_train, y_val) -> tuple[float, float, npt.ArrayLike]:
     """

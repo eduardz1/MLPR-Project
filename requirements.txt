@@ -5,4 +5,8 @@ scikit-learn==1.4.0
 lxml==5.1.0
 scour==0.38.2
 scipy==1.12.0
+seaborn==0.13.2
 # mplcairo==0.5 # requires Python >= 3.7 && < 3.11
+typst==0.11.0
+rich==13.7.1
+tqdm==4.66.4
