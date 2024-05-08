@@ -1,15 +1,14 @@
 import numpy as np
 from sklearn.model_selection import train_test_split
 
+from project.funcs.common import load_data
 from project.funcs.lda import lda
 from project.funcs.pca import pca
 from project.funcs.plots import plot_error_rates, plot_histograms
 
 
 def lab3(DATA: str):
-    dataset = np.loadtxt(DATA, delimiter=",")
-    X = dataset[:, :-1]
-    y = dataset[:, -1].astype(int)
+    X, y = load_data(DATA)
 
     _, PCA_data = pca(X, X.shape[1])
     plot_histograms(PCA_data, y, "pca")

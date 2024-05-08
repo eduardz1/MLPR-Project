@@ -1,13 +1,13 @@
 import numpy as np
 
+from project.funcs.common import load_data
 from project.funcs.logpdf import log_pdf
 from project.funcs.plots import plot_gaussian_densities
 
 
 def lab4(DATA: str):
-    dataset = np.loadtxt(DATA, delimiter=",")
-    X = dataset[:, :-1]
-    y = dataset[:, -1].astype(int)
+    X, y = load_data(DATA)
+
     classes = np.unique(y)
 
     means = np.array([np.mean(X[y == c], axis=0) for c in classes])

@@ -2,13 +2,12 @@ import numpy as np
 import numpy.typing as npt
 from sklearn.model_selection import train_test_split
 
+from project.funcs.common import load_data
 from project.funcs.logpdf import log_pdf
 
 
 def lab5(DATA: str):
-    dataset = np.loadtxt(DATA, delimiter=",")
-    X = dataset[:, :-1]
-    y = dataset[:, -1].astype(int)
+    X, y = load_data(DATA)
 
     # Split data into training and validation sets
     X_train, X_val, y_train, y_val = train_test_split(
