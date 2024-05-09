@@ -1,5 +1,8 @@
 import numpy as np
 import numpy.typing as npt
+from rich.align import Align
+from rich.console import Console
+from rich.table import Table
 from sklearn.model_selection import train_test_split
 
 from project.funcs.common import load_data
@@ -7,6 +10,9 @@ from project.funcs.logpdf import log_pdf
 
 
 def lab5(DATA: str):
+    console = Console()
+    np.set_printoptions(precision=3, suppress=True)
+
     X, y = load_data(DATA)
 
     # Split data into training and validation sets
@@ -20,31 +26,49 @@ def lab5(DATA: str):
     # Apply the MVG classifier
     accuracy, error_rate, llr = apply_mvg(X_train, X_val, y_train, y_val)
 
-    print("\nMV Gaussian classifier")
-    print(f"Accuracy: {accuracy:.2f}%")
-    print(f"Error rate: {error_rate:.2f}%")
-    print(f"Log-likelihood ratio: {llr}")
+    table = Table(title="MV Gaussian classifier")
+    table.add_column("Accuracy", justify="center")
+    table.add_column("Error rate", justify="center")
+    table.add_column("Log-likelihood ratio", justify="center")
+    table.add_row(
+        f"{accuracy:.2f}%",
+        f"{error_rate:.2f}%",
+        f"{llr}",
+    )
+    console.print(Align.center(table), new_line_start=True)
 
     # Apply the tied Gaussian classifier
     accuracy, error_rate = apply_tied_gaussian(X_train, X_val, y_train, y_val)
 
-    print("\nTied Gaussian classifier")
-    print(f"Accuracy: {accuracy:.2f}%")
-    print(f"Error rate: {error_rate:.2f}%")
+    table = Table(title="Tied Gaussian classifier")
+    table.add_column("Accuracy", justify="center")
+    table.add_column("Error rate", justify="center")
+    table.add_row(
+        f"{accuracy:.2f}%",
+        f"{error_rate:.2f}%",
+    )
+    console.print(Align.center(table), new_line_start=True)
 
     # Apply the naive Gaussian classifier
     accuracy, error_rate = apply_naive_gaussian(X_train, X_val, y_train, y_val)
 
-    print("\nNaive Gaussian classifier")
-    print(f"Accuracy: {accuracy:.2f}%")
-    print(f"Error rate: {error_rate:.2f}%")
+    table = Table(title="Naive Gaussian classifier")
+    table.add_column("Accuracy", justify="center")
+    table.add_column("Error rate", justify="center")
+    table.add_row(
+        f"{accuracy:.2f}%",
+        f"{error_rate:.2f}%",
+    )
 
     # Display the covariance matrix of each class
     classes = np.unique(y_val)
     covariances = {k: np.cov(X_train[:, y_train == k], bias=True) for k in classes}
 
-    print("\nCovariance matrices of each class:")
-    print(covariances)
+    table = Table(title="Covariance matrices")
+    table.add_column("Fake", justify="center")
+    table.add_column("Genuine", justify="center")
+    table.add_row(f"{covariances[0]}", f"{covariances[1]}")
+    console.print(Align.center(table), new_line_start=True)
 
     # Plot covariances as heatmaps
 
@@ -56,7 +80,7 @@ def lab5(DATA: str):
         sns.heatmap(covariances[c], ax=axs[i], annot=True)
         axs[i].set_title(f"Class {c}")
 
-    plt.show()
+    # plt.show()
 
 
 def apply_mvg(X_train, X_val, y_train, y_val) -> tuple[float, float, npt.ArrayLike]:

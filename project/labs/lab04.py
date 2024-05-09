@@ -1,4 +1,7 @@
 import numpy as np
+from rich.align import Align
+from rich.console import Console
+from rich.table import Table
 
 from project.funcs.common import load_data
 from project.funcs.logpdf import log_pdf
@@ -6,6 +9,7 @@ from project.funcs.plots import plot_gaussian_densities
 
 
 def lab4(DATA: str):
+    np.set_printoptions(precision=3, suppress=True)
     X, y = load_data(DATA)
 
     classes = np.unique(y)
@@ -17,6 +21,14 @@ def lab4(DATA: str):
 
     plot_gaussian_densities(X, y, means, vars, log_pdf)
 
-    print("ML estimates for the parameters are:")
-    print(f"Means: {means}")
-    print(f"Vars: {vars}")
+    console = Console()
+    table = Table(title="ML estimates for the parameters")
+
+    table.add_column("means", justify="center")
+    table.add_column("vars", justify="center")
+
+    table.add_row(
+        f"{means}",
+        f"{vars}",
+    )
+    console.print(Align.center(table), new_line_start=True)

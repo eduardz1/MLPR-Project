@@ -1,4 +1,7 @@
 import numpy as np
+from rich.align import Align
+from rich.console import Console
+from rich.table import Table
 from sklearn.model_selection import train_test_split
 
 from project.funcs.common import load_data
@@ -8,6 +11,8 @@ from project.funcs.plots import plot_error_rates, plot_histograms
 
 
 def lab3(DATA: str):
+    console = Console()
+
     X, y = load_data(DATA)
 
     _, PCA_data = pca(X, X.shape[1])
@@ -31,8 +36,14 @@ def lab3(DATA: str):
 
     y_pred = [0 if x >= threshold else 1 for x in X_val_lda.T[0]]
 
-    print(f"Threshold: {threshold:.2f}")
-    print(f"Error rate: {np.sum(y_val != y_pred) / y_val.size * 100:.2f}%")
+    table = Table(title="Mean of the projected class means")
+    table.add_column("Threshold", justify="center")
+    table.add_column("Error rate", justify="center")
+    table.add_row(
+        f"{threshold:.2f}",
+        f"{np.sum(y_val != y_pred) / y_val.size * 100:.2f}%",
+    )
+    console.print(Align.center(table), new_line_start=True)
 
     # Check if we can find a better threshold
     thresholds = np.linspace(X_train_lda.min(), X_train_lda.max(), 1000)
@@ -46,9 +57,14 @@ def lab3(DATA: str):
             empirical_error_rate = new_err
             empricial_threshold = threshold
 
-    print(
-        f"Empirical error rate: {empirical_error_rate:.2f}%, found with threshold {empricial_threshold:.2f}"
+    table = Table(title="Brute force search")
+    table.add_column("Threshold", justify="center")
+    table.add_column("Error rate", justify="center")
+    table.add_row(
+        f"{empricial_threshold:.2f}",
+        f"{empirical_error_rate:.2f}%",
     )
+    console.print(Align.center(table), new_line_start=True)
 
     error_rates_pca = []  # Error rates in percentage
     for i in range(1, X.shape[1] + 1):

@@ -2,6 +2,8 @@ import argparse
 
 import typst
 from rich.console import Console
+from rich.markdown import Markdown
+from rich.status import Status
 
 from project.labs.lab02 import lab2
 from project.labs.lab03 import lab3
@@ -64,23 +66,26 @@ def main():
     parse_args()
 
     if conf["lab2"]:
-        console.print("Running lab 2")
-
+        console.print(Markdown("# Lab 2"), new_line_start=True)
         lab2(DATA)
-    if conf["lab3"]:
-        console.print("Running lab 3")
 
+    if conf["lab3"]:
+        console.print(Markdown("# Lab 3"), new_line_start=True)
         lab3(DATA)
+
     if conf["lab4"]:
-        console.print("Running lab 4")
+        console.print(Markdown("# Lab 4"), new_line_start=True)
 
         lab4(DATA)
     if conf["lab5"]:
-        console.print("Running lab 5")
-
+        console.print(Markdown("# Lab 5"), new_line_start=True)
         lab5(DATA)
+
     if conf["compile_pdf"]:
+        status = Status("Compiling the report...")
+        status.start()
         typst.compile(TYPST_PATH, output=TYPST_PATH.replace(".typ", ".pdf"))
+        status.stop()
 
 
 if __name__ == "__main__":
