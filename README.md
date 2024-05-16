@@ -1,113 +1,33 @@
 # Project
 
+The project was tested with Python `3.12.2`, `3.11.9` and `3.10.11`.
+
 ## Building
 
-To only run the Python code, create a virtual environment (recommended) and install the dependencies:
+To only run the Python code, create a virtual environment (recommended) with `python3 -m venv .venv` and activate it with `source .venv/bin/activate` (or in Windows `.\.venv\Scripts\activate`). Then install the requirements with `pip install -r requirements.txt`. Afterward, you can run the Python module with:
 
 ```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+python -m project --all
 ```
 
-Afterwards you can run the Python module with:
-
-```bash
-python -m project
-```
-
-All the plots will be saved under [the images directory](report/imgs).
+This will run all the project parts (due to the `--all` flag) and save the plots under the [images directory](report/imgs).
 
 ### Configuration
 
-To configure the project you can either manually change the constants defined in [the module's main](project/__main__.py) or pass the labs to be compiled as command line arguments.
-
-By default, the project will compile all the labs but not the PDF report. To view all the available options run:
+To view all the available options run the command:
 
 ```bash
 python -m project --help
 ```
 
----
-
-To build the report you can either:
-
-- Set the `compile_pdf` flag, as mentioned before in [Configuration](#configuration)
-- Pass the CLI argument `--compile_pdf`
-- Compile it manually, for this, you will need to have **Node** and **Typst** installed. Node is used to optimize the SVG images through the `svgo` utility to make the PDF smaller (the Python alternatives work very poorly in comparison). Typst is a more modern, faster, and nicer-to-use alternative to LaTeX.
-
-`svgo` can be installed with:
+For example, to only run labs 2 and 5, you can use the command:
 
 ```bash
-npm install -g svgo
+python -m project --labs 2 5
 ```
 
-To install `typst` refer to its [GitHub page](https://github.com/typst/typst?tab=readme-ov-file#installation).
-
-The report can then be built by running:
+To build the report you can pass the `--compile_pdf` flag, for example:
 
 ```bash
-make
+python -m project --compile_pdf --all
 ```
-
-## Description
-
-The project task consists of a binary classification problem. The goal is to perform fingerprint spoofing
-detection, i.e. to identify genuine vs counterfeit fingerprint images. The dataset consists of labeled
-samples corresponding to the genuine (True, label 1) class and the fake (False, label 0) class. The
-samples are computed by a feature extractor that summarizes high-level characteristics of a fingerprint
-image. The data is 6-dimensional.
-The training files for the project are stored in file Project/trainData.txt. The format of the file is
-
-the same as for the Iris dataset, i.e. a csv file where each row represents a sample. The first 6 values of
-each row are the features, whereas the last value of each row represents the class (1 or 0). The samples
-are not ordered.
-Load the dataset and plot the histogram and pair-wise scatter plots of the different features. Analyze
-the plots.
-
-1. Analyze the first two features. What do you observe? Do the classes overlap? If so, where? Do the
-   classes show similar mean for the first two features? Are the variances similar for the two classes?
-   How many modes are evident from the histograms (i.e., how many “peaks” can be observed)?
-2. Analyze the third and fourth features. What do you observe? Do the classes overlap? If so, where?
-   Do the classes show similar mean for these two features? Are the variances similar for the two
-   classes? How many modes are evident from the histograms?
-3. Analyze the last two features. What do you observe? Do the classes overlap? If so, where? How
-   many modes are evident from the histograms? How many clusters can you notice from the scatter
-   plots for each class?
-
----
-
-Apply PCA and LDA to the project data. Start analyzing the effects of PCA on the features. Plot
-the histogram of the projected features for the 6 PCA directions, starting from the principal (largest
-variance). What do you observe? What are the effects on the class distributions? Can you spot the
-different clusters inside each class?
-
-Apply LDA (1 dimensional, since we have just two classes), and compute the histogram of the projected
-LDA samples. What do you observe? Do the classes overlap? Compared to the histogram of the 6
-features you computed in Laboratory 2, is LDA finding a good direction with little class overlap?
-
-Try applying LDA as classifier. Divide the dataset in model training and validation sets (you can reuse
-the previous function to split the dataset). Apply LDA, and select the threshold as in the previous
-sections. Compute the predictions, and the error rate.
-
-Now try changing the value of the threshold. What do you observe? Can you find values that improve
-the classification accuracy?
-
-Finally, try pre-processing the features with PCA. Apply PCA (estimated on the model training data
-only), and then classify the validation data with LDA. Analyze the performance as a function of the
-number of PCA dimensions m. What do you observe? Can you find values of m that improve the
-accuracy on the validation set? Is PCA beneficial for the task when combined with the LDA classifier?
-
----
-
-Try ﬁtting uni-variate Gaussian models to the diﬀerent features of the diﬀerent classes of the project
-dataset. For each class, for each component of the feature vector of that class, compute the ML estimate
-for the parameters of a 1D Gaussian distribution. Plot the distribution density (remember that you have
-to exponentiate the log-density) on top of the normalized histogram (set density=True when creating
-the histogram, see Laboratory 2). What do you observe? Are there features for which the Gaussian densi-
-ties provide a good ﬁt? Are there features for which the Gaussian model seems signiﬁcantly less accurate?
-
-Note: for this part of the project, since we are still performing some preliminary, qualitative analysis,
-you can compute the ML estimates and the plots either on the whole training set. In the following labs
-we will employ the densities for classiﬁcation, and we will need to perform model selection, therefore we
-will re-compute ML estimates on the model training portion of the dataset only (see Laboratory 3).

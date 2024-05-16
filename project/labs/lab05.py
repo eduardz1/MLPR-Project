@@ -1,12 +1,10 @@
 import numpy as np
-import numpy.typing as npt
-from rich.align import Align
 from rich.console import Console
-from rich.table import Table
-from sklearn.model_selection import train_test_split
 
+from project.classifiers.gaussian import Gaussian
+from project.figures.plots import heatmap, plot
+from project.figures.rich import table
 from project.funcs.common import load_data
-from project.funcs.logpdf import log_pdf
 
 
 def lab5(DATA: str):
@@ -15,173 +13,188 @@ def lab5(DATA: str):
 
     X, y = load_data(DATA)
 
-    # Split data into training and validation sets
-    X_train, X_val, y_train, y_val = train_test_split(
-        X, y, test_size=0.33, random_state=0
+    classifier = Gaussian(X, y)
+
+    # Analyze performance of various classifiers with the full dataset
+
+    accuracy, error_rate, llr = classifier.fit(multivariate=True)
+    table(
+        console,
+        "MV Gaussian classifier",
+        {
+            "Accuracy": [f"{accuracy:.2f}%"],
+            "Error rate": [f"{error_rate:.2f}%"],
+        },
+        llr,
     )
 
-    X_train = X_train.T
-    X_val = X_val.T
-
-    # Apply the MVG classifier
-    accuracy, error_rate, llr = apply_mvg(X_train, X_val, y_train, y_val)
-
-    table = Table(title="MV Gaussian classifier")
-    table.add_column("Accuracy", justify="center")
-    table.add_column("Error rate", justify="center")
-    table.add_column("Log-likelihood ratio", justify="center")
-    table.add_row(
-        f"{accuracy:.2f}%",
-        f"{error_rate:.2f}%",
-        f"{llr}",
+    accuracy, error_rate, _ = classifier.fit(tied=True)
+    table(
+        console,
+        "Tied Covariance Gaussian classifier",
+        {
+            "Accuracy": [f"{accuracy:.2f}%"],
+            "Error rate": [f"{error_rate:.2f}%"],
+        },
     )
-    console.print(Align.center(table), new_line_start=True)
 
-    # Apply the tied Gaussian classifier
-    accuracy, error_rate = apply_tied_gaussian(X_train, X_val, y_train, y_val)
-
-    table = Table(title="Tied Gaussian classifier")
-    table.add_column("Accuracy", justify="center")
-    table.add_column("Error rate", justify="center")
-    table.add_row(
-        f"{accuracy:.2f}%",
-        f"{error_rate:.2f}%",
-    )
-    console.print(Align.center(table), new_line_start=True)
-
-    # Apply the naive Gaussian classifier
-    accuracy, error_rate = apply_naive_gaussian(X_train, X_val, y_train, y_val)
-
-    table = Table(title="Naive Gaussian classifier")
-    table.add_column("Accuracy", justify="center")
-    table.add_column("Error rate", justify="center")
-    table.add_row(
-        f"{accuracy:.2f}%",
-        f"{error_rate:.2f}%",
+    accuracy, error_rate, _ = classifier.fit(naive=True)
+    table(
+        console,
+        "Naive Gaussian classifier",
+        {
+            "Accuracy": [f"{accuracy:.2f}%"],
+            "Error rate": [f"{error_rate:.2f}%"],
+        },
     )
 
     # Display the covariance matrix of each class
-    classes = np.unique(y_val)
-    covariances = {k: np.cov(X_train[:, y_train == k], bias=True) for k in classes}
 
-    table = Table(title="Covariance matrices")
-    table.add_column("Fake", justify="center")
-    table.add_column("Genuine", justify="center")
-    table.add_row(f"{covariances[0]}", f"{covariances[1]}")
-    console.print(Align.center(table), new_line_start=True)
-
-    # Plot covariances as heatmaps
-
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-
-    fig, axs = plt.subplots(1, len(classes), figsize=(15, 5))
-    for i, c in enumerate(classes):
-        sns.heatmap(covariances[c], ax=axs[i], annot=True)
-        axs[i].set_title(f"Class {c}")
-
-    # plt.show()
-
-
-def apply_mvg(X_train, X_val, y_train, y_val) -> tuple[float, float, npt.ArrayLike]:
-    """
-    Returns:
-        tuple[float, float]: Accuracy and error rate in percentage
-    """
-
-    classes = np.unique(y_val)
-
-    S = np.zeros((len(classes), X_val.shape[1]))
-    for i, c in enumerate(classes):
-        mu = np.mean(X_train[:, y_train == c], axis=1, keepdims=True)
-        C = np.cov(X_train[:, y_train == c], bias=True)
-
-        log_pdf_val = log_pdf(X_val, mu, C)
-
-        likelihood = np.exp(log_pdf_val)
-
-        S[i, :] = likelihood
-
-    llr = S[1] / S[0]
-
-    # We assume uniform class priors
-    SJoint = S * 0.5
-    SMarginal = SJoint.sum(axis=0)
-    SPost = SJoint / SMarginal
-
-    y_pred = np.argmax(SPost, axis=0)
-
-    accuracy = np.sum(y_val == y_pred) / y_val.size * 100
-    error_rate = 100 - accuracy
-
-    return accuracy, error_rate, llr
-
-
-def apply_tied_gaussian(X_train, X_val, y_train, y_val) -> tuple[float, float]:
-    """
-    Returns:
-        tuple[float, float]: Accuracy and error rate in percentage
-    """
-
-    classes = np.unique(y_val)
-    weights = np.array([len(X_train[:, y_train == c]) for c in classes])
-    Sw = np.average(
-        [np.cov(X_train[:, y_train == c], bias=True) for c in classes],
-        axis=0,
-        weights=weights,
+    covariances = classifier.covariances
+    table(
+        console,
+        "Covariance matrices",
+        {
+            "Fake": [f"{covariances[0]}"],
+            "Genuine": [f"{covariances[1]}"],
+        },
     )
 
-    S = np.zeros((len(classes), X_val.shape[1]))
-    for i, c in enumerate(classes):
-        mu = np.mean(X_train[:, y_train == c], axis=1, keepdims=True)
+    # Display the correlation matrices of each class
 
-        log_pdf_val = log_pdf(X_val, mu, Sw)
+    correlation_matrices = classifier.corrcoef
+    table(
+        console,
+        "Correlation matrices",
+        {
+            "Fake": [f"{correlation_matrices[0]}"],
+            "Genuine": [f"{correlation_matrices[1]}"],
+        },
+    )
 
-        likelihood = np.exp(log_pdf_val)
+    # Plot covariances and correlation matrices as heatmaps
 
-        S[i, :] = likelihood
+    heatmap(covariances[0], "Reds", "covariance_fake")
+    heatmap(covariances[1], "Blues", "covariance_genuine")
+    heatmap(correlation_matrices[0], "Reds", "correlation_fake")
+    heatmap(correlation_matrices[1], "Blues", "correlation_genuine")
 
-    SJoint = S * 0.5
-    SMarginal = SJoint.sum(axis=0)
-    SPost = SJoint / SMarginal
+    # Try again repeating the classification without the last two features,
+    # which do not fit well with the Gaussian assumption
 
-    y_pred = np.argmax(SPost, axis=0)
+    accuracy, error_rate, llr = classifier.fit(multivariate=True, slice=slice(-2))
+    table(
+        console,
+        "MV Gaussian classifier (without last two features)",
+        {
+            "Accuracy": [f"{accuracy:.2f}%"],
+            "Error rate": [f"{error_rate:.2f}%"],
+        },
+        llr,
+    )
 
-    accuracy = np.sum(y_val == y_pred) / y_val.size * 100
-    error_rate = 100 - accuracy
+    accuracy, error_rate, _ = classifier.fit(tied=True, slice=slice(-2))
+    table(
+        console,
+        "Tied Covariance Gaussian classifier (without last two features)",
+        {
+            "Accuracy": [f"{accuracy:.2f}%"],
+            "Error rate": [f"{error_rate:.2f}%"],
+        },
+    )
 
-    return accuracy, error_rate
+    accuracy, error_rate, _ = classifier.fit(naive=True, slice=slice(-2))
+    table(
+        console,
+        "Naive Gaussian classifier (without last two features)",
+        {
+            "Accuracy": [f"{accuracy:.2f}%"],
+            "Error rate": [f"{error_rate:.2f}%"],
+        },
+    )
 
+    # Benchmark MVG and Tied Covariance Gaussian classifiers for first two features
 
-def apply_naive_gaussian(X_train, X_val, y_train, y_val) -> tuple[float, float]:
-    """
-    Returns:
-        tuple[float, float]: Accuracy and error rate in percentage
-    """
+    accuracy, error_rate, llr = classifier.fit(multivariate=True, slice=slice(2))
+    table(
+        console,
+        "MV Gaussian classifier (first two features)",
+        {
+            "Accuracy": [f"{accuracy:.2f}%"],
+            "Error rate": [f"{error_rate:.2f}%"],
+        },
+        llr,
+    )
 
-    classes = np.unique(y_val)
+    accuracy, error_rate, _ = classifier.fit(tied=True, slice=slice(2))
+    table(
+        console,
+        "Tied Covariance Gaussian classifier (first two features)",
+        {
+            "Accuracy": [f"{accuracy:.2f}%"],
+            "Error rate": [f"{error_rate:.2f}%"],
+        },
+    )
 
-    S = np.zeros((len(classes), X_val.shape[1]))
-    for i, c in enumerate(classes):
-        mu = np.mean(X_train[:, y_train == c], axis=1, keepdims=True)
-        C = np.cov(X_train[:, y_train == c], bias=True)
+    # Benchmark MVG and Tied Covariance Gaussian classifiers for third and fourth features
 
-        # Diagonalize the covariance matrix
-        C = np.diag(np.diag(C))
+    accuracy, error_rate, llr = classifier.fit(multivariate=True, slice=slice(2, 4))
+    table(
+        console,
+        "MV Gaussian classifier (third and fourth features)",
+        {
+            "Accuracy": [f"{accuracy:.2f}%"],
+            "Error rate": [f"{error_rate:.2f}%"],
+        },
+        llr,
+    )
 
-        log_pdf_val = log_pdf(X_val, mu, C)
+    accuracy, error_rate, _ = classifier.fit(tied=True, slice=slice(2, 4))
+    table(
+        console,
+        "Tied Covariance Gaussian classifier (third and fourth features)",
+        {
+            "Accuracy": [f"{accuracy:.2f}%"],
+            "Error rate": [f"{error_rate:.2f}%"],
+        },
+    )
 
-        likelihood = np.exp(log_pdf_val)
+    # Try to reduce the dimensionality with PCA
 
-        S[i, :] = likelihood
+    accuracies_mvg = []
+    accuracies_tied = []
+    accuracies_naive = []
 
-    SJoint = S * 0.5
-    SMarginal = SJoint.sum(axis=0)
-    SPost = SJoint / SMarginal
+    for i in range(1, 7):
+        accuracy, _, _ = classifier.fit(multivariate=True, pca=True, pca_dimensions=i)
+        accuracies_mvg.append(accuracy)
 
-    y_pred = np.argmax(SPost, axis=0)
+        accuracy, _, _ = classifier.fit(tied=True, pca=True, pca_dimensions=i)
+        accuracies_tied.append(accuracy)
 
-    accuracy = np.sum(y_val == y_pred) / y_val.size * 100
-    error_rate = 100 - accuracy
+        accuracy, _, _ = classifier.fit(naive=True, pca=True, pca_dimensions=i)
+        accuracies_naive.append(accuracy)
 
-    return accuracy, error_rate
+    plot(
+        {
+            "Multivariate": accuracies_mvg,
+            "Tied Covariance": accuracies_tied,
+            "Naive Bayes": accuracies_naive,
+        },
+        range(1, 7),
+        xlabel="Number of features",
+        ylabel="Accuracy (%)",
+        file_name="pca_to_gaussians",
+        figsize=(8, 4),
+    )
+
+    table(
+        console,
+        "PCA to Gaussian classifiers",
+        {
+            "Number of features": [*range(1, 7)],
+            "Multivariate": [f"{a:.2f}%" for a in accuracies_mvg],
+            "Tied Covariance": [f"{a:.2f}%" for a in accuracies_tied],
+            "Naive Bayes": [f"{a:.2f}%" for a in accuracies_naive],
+        },
+    )

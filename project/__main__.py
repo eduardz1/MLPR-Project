@@ -1,8 +1,8 @@
 import argparse
+import os
 
 import typst
 from rich.console import Console
-from rich.markdown import Markdown
 from rich.status import Status
 
 from project.labs.lab02 import lab2
@@ -27,31 +27,48 @@ def parse_args():
         description="Run the code for the project, separately for each labs. Optionally compile the report."
     )
     parser.add_argument(
-        "--lab2", action="store_true", help="run project part for lab 2"
+        "-c",
+        "--compile_pdf",
+        action="store_true",
+        help="compile the report in pdf format",
     )
-    parser.add_argument(
-        "--lab3", action="store_true", help="run project part for lab 3"
+    group = parser.add_argument_group(
+        "labs", "Choose which part of the project, ordered by labs, to run"
     )
-    parser.add_argument(
-        "--lab4", action="store_true", help="run project part for lab 4"
+
+    exclusive_group = group.add_mutually_exclusive_group(required=True)
+    exclusive_group.add_argument(
+        "-a",
+        "--all",
+        action="store_true",
+        help="run all project parts (does not compile the report)",
     )
-    parser.add_argument(
-        "--lab5", action="store_true", help="run project part for lab 5"
-    )
-    parser.add_argument(
-        "-c", "--compile_pdf", action="store_true", help="compile the report"
+    exclusive_group.add_argument(
+        "-l",
+        "--labs",
+        choices=range(2, 6),
+        type=int,
+        nargs="+",
+        help="run specific project parts by specifying one of more associated lab numbers",
     )
 
     args = parser.parse_args()
 
-    if args.lab2:
+    if args.all:
         conf["lab2"] = True
-    if args.lab3:
         conf["lab3"] = True
-    if args.lab4:
         conf["lab4"] = True
-    if args.lab5:
         conf["lab5"] = True
+    else:
+        for lab in args.labs:
+            if lab == 2:
+                conf["lab2"] = True
+            elif lab == 3:
+                conf["lab3"] = True
+            elif lab == 4:
+                conf["lab4"] = True
+            elif lab == 5:
+                conf["lab5"] = True
     if args.compile_pdf:
         conf["compile_pdf"] = True
 
@@ -62,23 +79,28 @@ def main():
     # TODO: Enable this once python 3.12 support is added
     # https://github.com/matplotlib/mplcairo/issues/51
     # os.environ["MPLBACKEND"] = "module://mplcairo.base"
+    os.environ["MPLBACKEND"] = "Agg"
 
     parse_args()
 
     if conf["lab2"]:
-        console.print(Markdown("# Lab 2"), new_line_start=True)
+        console.log("[bold red]Lab 2 - Analyzing the features [/bold red]")
         lab2(DATA)
 
     if conf["lab3"]:
-        console.print(Markdown("# Lab 3"), new_line_start=True)
+        console.log("[bold red]Lab 3 - PCA & LDA [/bold red]")
         lab3(DATA)
 
     if conf["lab4"]:
-        console.print(Markdown("# Lab 4"), new_line_start=True)
-
+        console.log(
+            "[bold red]Lab 4 - Probability densities and ML estimates [/bold red]"
+        )
         lab4(DATA)
+
     if conf["lab5"]:
-        console.print(Markdown("# Lab 5"), new_line_start=True)
+        console.log(
+            "[bold red]Lab 5 - Generative models for classification [/bold red]"
+        )
         lab5(DATA)
 
     if conf["compile_pdf"]:

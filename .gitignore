@@ -1,6 +1,11 @@
 # VSCode
 .vscode/settings.json
 
+# Profile
+profile*
+*.pstats
+*.prof
+
 # Images that can be regenarated
 *.svg
 *.pdf

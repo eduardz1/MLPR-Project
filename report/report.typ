@@ -77,9 +77,7 @@
   figure(image("imgs/hist/histograms_1.svg"), caption: [Feature 2]),
 )
 #eqcolumns(2)[
-  When looking at the first feature we can observe that the classes overlap almost completely. The `Genuine` label has a higher variance than the `Fake` class but the mean is similar. Both classes exhibit one mode in the histogram but the `Fake` class has a higher peak.
-
-  Looking at the second feature we can notice the opposite behavior. The `Fake` class has a higher variance than the `Genuine` class but the mean is similar. Both classes exhibit one mode in the histogram but
+  When looking at the first feature we can observe that the classes overlap almost completely. The `Genuine` label has a higher variance than the `Fake` class but the mean is similar. Both classes exhibit one mode in the histogram but the `Fake` class has a higher peak. Looking at the second feature we can notice the opposite behavior. The `Fake` class has a higher variance than the `Genuine` class but the mean is similar. Both classes exhibit one mode in the histogram but
   the `Genuine` class has a higher peak. Again, the classes overlap almost completely.
 ]
 
@@ -92,8 +90,7 @@
   figure(image("imgs/hist/histograms_3.svg"), caption: [Feature 4]),
 )
 #eqcolumns(2)[
-  Looking at the plot for the third class we can notice that the two features are much more distinct, they overlap slightly in 0. The `Genuine` class has a peak in -1 while the `Fake` class has a peak in 1. They both have similar mean and variance. One mode for each class is evident from the histogram.
-
+  Looking at the plot for the third class we can notice that the two features are much more distinct, they overlap slightly in 0. The `Genuine` class has a peak in -1 while the `Fake` class has a peak in 1. They both have similar variance but the means differ. One mode for each class is evident from the histogram.
   The fourth feature shows similar characteristics to the third feature.
 ]
 
@@ -107,7 +104,6 @@
 )
 #eqcolumns(2)[
   The fifth feature also shows a good distinction between the two classes with an overlap at the edges of the `Fake` class distribution. They exhibit similar variance but with a lower mean for the `Genuine` class. The `Fake` class peaks in 0 while the `Genuine` has two modes and peaks in -1 and 1.
-
   The last feature shows similar characteristics to the fifth feature.
 ]
 
@@ -203,7 +199,7 @@ Looking at the scatter plot we see that there are four distinct clusters for eac
 
 = ML Estimates & Probability Densities
 
-== Gaussian Models
+== Gaussian Models <gaussian-models>
 #figure(
   caption: [Uni-variate Gaussian models with a good fit to the data],
   table(
@@ -262,23 +258,23 @@ Looking at the scatter plot we see that there are four distinct clusters for eac
     [*Fake*],
     [*Genuine*],
     [1],
-    [#text(size: 0.8em, $space space 2.87744301 * 10^(-3)$)],
-    [#text(size: 0.8em, $space space 5.44547838 * 10^(-4)$)],
+    [#text(size: 0.8em, $space space 2.87744301 dot 10^(-3)$)],
+    [#text(size: 0.8em, $space space 5.44547838 dot 10^(-4)$)],
     [2],
-    [#text(size: 0.8em, $space space 1.86931579 * 10^(-2)$)],
-    [#text(size: 0.8em, $-8.52437392 * 10^(-3)$)],
+    [#text(size: 0.8em, $space space 1.86931579 dot 10^(-2)$)],
+    [#text(size: 0.8em, $-8.52437392 dot 10^(-3)$)],
     [3],
-    [#text(size: 0.8em, $-6.80940159 * 10^(-1)$)],
-    [#text(size: 0.8em, $space space 6.65237846 * 10^(-1)$)],
+    [#text(size: 0.8em, $-6.80940159 dot 10^(-1)$)],
+    [#text(size: 0.8em, $space space 6.65237846 dot 10^(-1)$)],
     [4],
-    [#text(size: 0.8em, $space space 6.70836195 * 10^(-1)$)],
-    [#text(size: 0.8em, $-6.64195349 * 10^(-1)$)],
+    [#text(size: 0.8em, $space space 6.70836195 dot 10^(-1)$)],
+    [#text(size: 0.8em, $-6.64195349 dot 10^(-1)$)],
     [5],
-    [#text(size: 0.8em, $space space 2.79569669 * 10^(-2)$)],
-    [#text(size: 0.8em, $-4.17251858 * 10^(-2)$)],
+    [#text(size: 0.8em, $space space 2.79569669 dot 10^(-2)$)],
+    [#text(size: 0.8em, $-4.17251858 dot 10^(-2)$)],
     [6],
-    [#text(size: 0.8em, $-5.82740035 * 10^(-3)$)],
-    [#text(size: 0.8em, $space space 2.39384879 * 10^(-2)$)],
+    [#text(size: 0.8em, $-5.82740035 dot 10^(-3)$)],
+    [#text(size: 0.8em, $space space 2.39384879 dot 10^(-2)$)],
     table.hline(stroke: 0.5pt),
   )
 
@@ -322,26 +318,32 @@ Looking at the scatter plot we see that there are four distinct clusters for eac
 = Generative Models for Classification
 
 #align(center)[
-  #table(
-    columns: 4,
-    align: center + horizon,
-    table.hline(stroke: 0.5pt),
-    inset: 1em,
-    table.cell(fill: luma(250), []),
-    table.cell(fill: luma(250), [*Multi Variate Gaussian*], inset: 1em),
-    table.cell(fill: luma(250), [*Tied Gaussian*], inset: 1em),
-    table.cell(fill: luma(250), [*Naive Bayes*], inset: 1em),
-    table.hline(stroke: 0.5pt + gray),
-    [*Accuracy*],
-    [92.47%],
-    [90.35%],
-    [92.37%],
-    [*Error Rate*],
-    [7.53%],
-    [9.65%],
-    [7.63%],
-    table.hline(stroke: 0.5pt),
-  )
+  #figure(
+    [
+      #set par(justify: false)
+      #table(
+        columns: 4,
+        align: center + horizon,
+        table.hline(stroke: 0.5pt),
+        inset: 1em,
+        table.cell(fill: luma(250), []),
+        table.cell(fill: luma(250), [*Multivariate*], inset: 1em),
+        table.cell(fill: luma(250), [*Tied Covariance*], inset: 1em),
+        table.cell(fill: luma(250), [*Naive Bayes*], inset: 1em),
+        table.hline(stroke: 0.5pt + gray),
+        [*Accuracy*],
+        [92.47%],
+        [90.35%],
+        [92.37%],
+        [*Error Rate*],
+        [7.53%],
+        [9.65%],
+        [7.63%],
+        table.hline(stroke: 0.5pt),
+      )
+    ],
+    caption: [Different Gaussian classifiers perfomance compared],
+  ) <all-features>
 ]
 
 \
@@ -350,30 +352,161 @@ The table above summarizes the various results, showing that the `Multi Variate 
 
 \
 
-#columns(2)[
-  == Covariance Matrices for Fake and Genuine Classes
+#eqcolumns(2)[
+  == Covariance and Correlation Matrices for Fake and Genuine Classes
 
-  #box(inset: 1em)[
-    #align(center)[
-      \
-      $C_("Fake") = mat(
-        0.5552, space space 0.0182, 0.0092, space space 0.0113, space space 0.0187, space space 0.0013;
-        0.0182, space space 1.3786, 0.0181, -0.0051, space space 0.0198, -0.0262;
-        0.0096, space space 0.0181, 0.5682, space space 0.0319, -0.0143, space space 0.0112;
-        0.0113, -0.0051,  0.0319, 0.5230,  space space 0.0092,  space space 0.0094;
-        0.0187,  space space 0.0198, -0.0143, 0.0092, space space 0.6811, space space 0.0157;
-        0.0013, -0.0262, 0.0112, 0.0094, space space 0.0157, space space 0.7059
-      ) \
-      C_("Genuine") = mat(
-        space space 1.4198, space space 0.0036, -0.0137, space space 0.0213, -0.0249, -0.0592;
-        space space 0.0036, space space 0.6069, -0.0066, -0.0100, space space 0.0260, -0.0022;
-        -0.0137, -0.0066, space space 0.5448, space space 0.0046, -0.0106, -0.0198;
-        space space 0.0213, -0.0099, space space 0.0046, space space 0.5530, -0.0100, space space 0.0144;
-        -0.0249, space space 0.0260, -0.0106, -0.0101, space space 1.3095, -0.0242;
-        -0.0592, -0.0022, -0.0198, space space 0.0144, -0.0242, space space 1.2761
-      )$
-    ]
-  ]
+  To better visualize the correlations we can view them as heatmaps.
 
-  To better visualize the correlations we can view a heatmap of the data
+  #figure(
+    caption: [Covariance matrices for the `Fake` and `Genuine` classes],
+    grid(
+      columns: 2,
+      inset: (right: -10pt, left: -10pt),
+      image("imgs/heatmaps/covariance_fake.svg"),
+      image("imgs/heatmaps/covariance_genuine.svg"),
+    ),
+  )
+
+  We notice the covariance values are very small compared to the variances. To better visualize the strength of the variances with respect to the covariances we can compute the correlation matrices for the two classes.
+
+  #figure(
+    caption: [Correlation matrices for the `Fake` and `Genuine` classes],
+    grid(
+      columns: 2,
+      inset: (right: -10pt, left: -10pt),
+      image("imgs/heatmaps/correlation_fake.svg"),
+      image("imgs/heatmaps/correlation_genuine.svg"),
+    ),
+  )
+
+  #v(100pt)
+
+  == Filtering out the Last Two Features
+
+  We noticed in @gaussian-models[Lab 4 Section] that the last two features do not fit well with the Gaussian assumption. When repeating the classification tasks without the last two features, we notice that the accuracy and error rate decrease slightly. This result, pheraphs unexpected, implies that there is still valuable information to be extracted from these features.
+
+  #figure(
+    align(center)[
+      #set par(justify: false)
+      #table(
+        columns: 3,
+        align: center + horizon,
+        table.hline(stroke: 0.5pt),
+        inset: 1em,
+        table.cell(fill: luma(250), []),
+        table.cell(fill: luma(250), [*Accuracy*], inset: 1em),
+        table.cell(fill: luma(250), [*Error Rate*], inset: 1em),
+        table.hline(stroke: 0.5pt + gray),
+        [*Multivariate*],
+        [91.87%],
+        [8.13%],
+        [*Tied Covariance*],
+        [90.10%],
+        [9.90%],
+        [*Naive Bayes*],
+        [91.77%],
+        [8.23%],
+        table.hline(stroke: 0.5pt),
+      )
+    ],
+    caption: [Classification results without the last two features],
+  )
+
+  == First Two Features
+
+  When we apply the Multivariate and Tied Covariance Gaussian classifiers on only the first two features, we notice that the accuracy decreases drastically. #text(fill: red)[TODO: why?]
+
+  #figure(
+    align(center)[
+      #set par(justify: false)
+      #table(
+        columns: 3,
+        align: center + horizon,
+        table.hline(stroke: 0.5pt),
+        inset: 1em,
+        table.cell(fill: luma(250), []),
+        table.cell(fill: luma(250), [*Accuracy*], inset: 1em),
+        table.cell(fill: luma(250), [*Error Rate*], inset: 1em),
+        table.hline(stroke: 0.5pt + gray),
+        [*Multivariate*],
+        [63.54%],
+        [36.46%],
+        [*Tied Covariance*],
+        [49.60%],
+        [50.40%],
+        table.hline(stroke: 0.5pt),
+      )
+    ],
+    caption: [Classification results for the first two features],
+  )
+
+  == Third and Fourth Features <third-fourth-features>
+
+  Third and fourth features are sufficient to achieve a good accuracy with both the Multivariate and Tied Covariance Gaussian classifiers.
+
+  #figure(
+    align(center)[
+      #set par(justify: false)
+      #table(
+        columns: 3,
+        align: center + horizon,
+        table.hline(stroke: 0.5pt),
+        inset: 1em,
+        table.cell(fill: luma(250), []),
+        table.cell(fill: luma(250), [*Accuracy*], inset: 1em),
+        table.cell(fill: luma(250), [*Error Rate*], inset: 1em),
+        table.hline(stroke: 0.5pt + gray),
+        [*Multivariate*],
+        [90.25%],
+        [9.75%],
+        [*Tied Covariance*],
+        [90.10%],
+        [9.90%],
+        table.hline(stroke: 0.5pt),
+      )
+    ],
+    caption: [Classification results for the third and fourth features],
+  )
+
+  == Reducing the Dimensionality with PCA
+
+  We can try to reduce the dimensionality using PCA, we see that the Naive Bayes approach achieves the best results compared to the other models. Specifically when paired with a number of PCA components equal to 2.
+
+  #figure(
+    image("imgs/pca_to_gaussians.svg"),
+  )
+
+  #figure(
+    align(center)[
+      #set par(justify: false)
+      #table(
+        columns: 3,
+        align: center + horizon,
+        table.hline(stroke: 0.5pt),
+        inset: 1em,
+        table.cell(fill: luma(250), []),
+        table.cell(fill: luma(250), [*Accuracy*], inset: 1em),
+        table.cell(fill: luma(250), [*Error Rate*], inset: 1em),
+        table.hline(stroke: 0.5pt + gray),
+        [*Naive Bayes*],
+        [90.61%],
+        [9.39%],
+        table.hline(stroke: 0.5pt),
+      )
+    ],
+  )
+
+  Applying PCA to reduce the dimensionality, doesn't improve the classification accuracy compared to the full dataset or the dataset without the last two features. Selecting the first two principals components of PCA gets us back to results that are similar to @third-fourth-features.
+
+  Overall, the model that provided *the best* accuracy on the validation set is the `Multivariate Gaussian` model on the full dataset (@all-features).
 ]
+
+#pagebreak(weak: true)
+
+#set page(
+  header: align(right, text(fill: gray)[`Report for lab 7`]),
+)
+
+= TODO
+
+kl
