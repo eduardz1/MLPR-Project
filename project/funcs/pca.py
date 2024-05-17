@@ -3,7 +3,8 @@ import numpy.typing as npt
 
 
 def pca(X: npt.NDArray, m: int | None = None) -> tuple[npt.NDArray, npt.NDArray]:
-    """Performs Principal Component Analysis on the data matrix X
+    """
+    Performs Principal Component Analysis on the data matrix X
 
     Args:
         X (NDArray): [N x M] data matrix

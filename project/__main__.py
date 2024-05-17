@@ -9,6 +9,7 @@ from project.labs.lab02 import lab2
 from project.labs.lab03 import lab3
 from project.labs.lab04 import lab4
 from project.labs.lab05 import lab5
+from project.labs.lab07 import lab7
 
 TYPST_PATH = "report/report.typ"
 DATA = "data/trainData.txt"
@@ -18,6 +19,7 @@ conf = {
     "lab3": False,
     "lab4": False,
     "lab5": False,
+    "lab7": False,
     "compile_pdf": False,
 }
 
@@ -46,7 +48,7 @@ def parse_args():
     exclusive_group.add_argument(
         "-l",
         "--labs",
-        choices=range(2, 6),
+        choices=[2, 3, 4, 5, 7],
         type=int,
         nargs="+",
         help="run specific project parts by specifying one of more associated lab numbers",
@@ -59,6 +61,7 @@ def parse_args():
         conf["lab3"] = True
         conf["lab4"] = True
         conf["lab5"] = True
+        conf["lab7"] = True
     else:
         for lab in args.labs:
             if lab == 2:
@@ -69,6 +72,8 @@ def parse_args():
                 conf["lab4"] = True
             elif lab == 5:
                 conf["lab5"] = True
+            elif lab == 7:
+                conf["lab7"] = True
     if args.compile_pdf:
         conf["compile_pdf"] = True
 
@@ -102,6 +107,12 @@ def main():
             "[bold red]Lab 5 - Generative models for classification [/bold red]"
         )
         lab5(DATA)
+
+    if conf["lab7"]:
+        console.log(
+            "[bold red]Lab 7 - Performance analysis of the MVG classifier [/bold red]"
+        )
+        lab7(DATA)
 
     if conf["compile_pdf"]:
         status = Status("Compiling the report...")

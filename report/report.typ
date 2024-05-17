@@ -61,7 +61,7 @@
       ..cells,
     )
   ],
-)
+) <scatter>
 
 #v(1fr)
 
@@ -70,7 +70,7 @@
 )
 
 = Features Compared
-== Features 1 and 2
+== Features 1 and 2 <features-1-2>
 #grid(
   columns: 2,
   figure(image("imgs/hist/histograms_0.svg"), caption: [Feature 1]),
@@ -361,7 +361,7 @@ The table above summarizes the various results, showing that the `Multi Variate 
     caption: [Covariance matrices for the `Fake` and `Genuine` classes],
     grid(
       columns: 2,
-      inset: (right: -10pt, left: -10pt),
+      inset: (right: -5pt, left: -5pt),
       image("imgs/heatmaps/covariance_fake.svg"),
       image("imgs/heatmaps/covariance_genuine.svg"),
     ),
@@ -373,7 +373,7 @@ The table above summarizes the various results, showing that the `Multi Variate 
     caption: [Correlation matrices for the `Fake` and `Genuine` classes],
     grid(
       columns: 2,
-      inset: (right: -10pt, left: -10pt),
+      inset: (right: -5pt, left: -5pt),
       image("imgs/heatmaps/correlation_fake.svg"),
       image("imgs/heatmaps/correlation_genuine.svg"),
     ),
@@ -414,7 +414,15 @@ The table above summarizes the various results, showing that the `Multi Variate 
 
   == First Two Features
 
-  When we apply the Multivariate and Tied Covariance Gaussian classifiers on only the first two features, we notice that the accuracy decreases drastically. #text(fill: red)[TODO: why?]
+  When we apply the Multivariate and Tied Covariance Gaussian classifiers on only the first two features, we notice that the accuracy decreases drastically. This is to be expected, as we have seen in ]
+
+#v(100pt)
+
+#eqcolumns(2)[
+
+  #v(30pt)
+
+  @features-1-2[Lab 2 Section] and particularly in @scatter, the two features don't discriminate well between the two classes and the combination of the two doesn't help either.
 
   #figure(
     align(center)[

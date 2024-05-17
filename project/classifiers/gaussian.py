@@ -36,6 +36,15 @@ class Gaussian:
         }
 
     def fit(self, **kwargs) -> tuple[float, float, Optional[ArrayLike]]:
+        """
+        Fit the Gaussian classifier to the training data and return the accuracy
+        and error rate on the validation data.
+
+        Returns:
+            tuple[float, float, Optional[ArrayLike]]: Accuracy and error rate
+                in percentage and log-likelihood ratio (LLR)
+        """
+
         slice = kwargs.get("slice", None)
 
         X_train = self._X_train if slice is None else self._X_train[slice]
