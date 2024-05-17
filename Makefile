@@ -1,11 +1,8 @@
 all:
-	python -m project --all
-	typst compile report/report.typ
+	python -m project -a -c
 
 profile:
-	python -m cProfile -m project --all > profile.txt
+	python -m cProfile -m project -a > profile.txt
 
 clean:
-	rm report/report.pdf
-	rm -r report/imgs/*.svg
-	rm profile.txt
+	rm -r */*.pdf */*.svg profile.txt
