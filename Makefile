@@ -1,8 +1,9 @@
 all:
-	python -m project -a -c
+	@python -m project -a -c
 
 profile:
-	python -m cProfile -m project -a > profile.txt
+	@python -m cProfile -m project -a > profile.txt
 
 clean:
-	rm -r */*.pdf */*.svg profile.txt
+	@find . -name "*.svg" -type f -delete
+	@find . -name "*.pdf" -type f -delete
