@@ -39,7 +39,7 @@ def _hist(args):
 
     plt.tight_layout()
 
-    plt.savefig(f"{IMG_FOLDER}/hist/{kwargs.get("file_name")}_{i}.svg")
+    plt.savefig(f"{IMG_FOLDER}/hist/{kwargs.get('file_name')}_{i}.svg")
 
     plt.clf()
 
@@ -119,7 +119,7 @@ def _scatter(args):
     blend_svgs(
         f"{IMG_FOLDER}/scatter/single/fake_{i}_{j}.svg",
         f"{IMG_FOLDER}/scatter/single/genuine_{i}_{j}.svg",
-        f"{IMG_FOLDER}/scatter/{kwargs.get("file_name", "overlay")}_{i}_{j}.svg",
+        f"{IMG_FOLDER}/scatter/{kwargs.get('file_name', 'overlay')}_{i}_{j}.svg",
     )
 
 

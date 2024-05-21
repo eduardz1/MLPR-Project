@@ -107,4 +107,8 @@
   set par(justify: true)
 
   body
+
+  set page(header: none)
+
+  bibliography("works.bib", title: "References")
 }

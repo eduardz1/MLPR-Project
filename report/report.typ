@@ -61,6 +61,7 @@
       ..cells,
     )
   ],
+  kind: image,
 ) <scatter>
 
 #v(1fr)
@@ -329,7 +330,7 @@ Looking at the scatter plot we see that there are four distinct clusters for eac
         table.cell(fill: luma(250), []),
         table.cell(fill: luma(250), [*Multivariate*], inset: 1em),
         table.cell(fill: luma(250), [*Tied Covariance*], inset: 1em),
-        table.cell(fill: luma(250), [*Naive Bayes*], inset: 1em),
+        table.cell(fill: luma(250), [*Naïve Bayes*], inset: 1em),
         table.hline(stroke: 0.5pt + gray),
         [*Accuracy*],
         [92.47%],
@@ -379,11 +380,11 @@ The table above summarizes the various results, showing that the `Multi Variate 
     ),
   )
 
-  #v(100pt)
+  From the correlation matrices, we can see that the features are weakly correlated with each other. Given the Naïve Bayes assumption of indipendence, $p(E | c) = product_(i = 1)^n p (x_i | c)$ where $E = (x_1, x_2, dots, x_n)$, it's not surprising that the model performs well. (Note that indipendence is not really needed for the model to perform well, #cite(<Zhang2004TheOO>, form: "prose") explores the optimality of the Naïve Bayes classifier even in in the presence correlation between the features).
 
   == Filtering out the Last Two Features
 
-  We noticed in @gaussian-models[Lab 4 Section] that the last two features do not fit well with the Gaussian assumption. When repeating the classification tasks without the last two features, we notice that the accuracy and error rate decrease slightly. This result, pheraphs unexpected, implies that there is still valuable information to be extracted from these features.
+  We noticed in @gaussian-models[Lab 4 Section] that the last two features do not fit well with the Gaussian assumption. When repeating the classification tasks without the last two features, we notice that the accuracy decreses slightly across the board. This result, pheraphs unexpected, implies that there is still valuable information to be extracted from these features.
 
   #figure(
     align(center)[
@@ -403,7 +404,7 @@ The table above summarizes the various results, showing that the `Multi Variate 
         [*Tied Covariance*],
         [90.10%],
         [9.90%],
-        [*Naive Bayes*],
+        [*Naïve Bayes*],
         [91.77%],
         [8.23%],
         table.hline(stroke: 0.5pt),
@@ -414,15 +415,7 @@ The table above summarizes the various results, showing that the `Multi Variate 
 
   == First Two Features
 
-  When we apply the Multivariate and Tied Covariance Gaussian classifiers on only the first two features, we notice that the accuracy decreases drastically. This is to be expected, as we have seen in ]
-
-#v(100pt)
-
-#eqcolumns(2)[
-
-  #v(30pt)
-
-  @features-1-2[Lab 2 Section] and particularly in @scatter, the two features don't discriminate well between the two classes and the combination of the two doesn't help either.
+  When we apply the Multivariate and Tied Covariance Gaussian classifiers on only the first two features, we notice that the accuracy decreases drastically. This is to be expected, as we have seen in @features-1-2[Lab 2 Section] and particularly in @scatter, the two features don't discriminate well between the two classes and the combination of the two doesn't help either.
 
   #figure(
     align(center)[
@@ -452,6 +445,8 @@ The table above summarizes the various results, showing that the `Multi Variate 
 
   Third and fourth features are sufficient to achieve a good accuracy with both the Multivariate and Tied Covariance Gaussian classifiers.
 
+  We already expected this based again on @scatter, where we saw that the two features create two distinct clusters for each class.
+
   #figure(
     align(center)[
       #set par(justify: false)
@@ -478,7 +473,7 @@ The table above summarizes the various results, showing that the `Multi Variate 
 
   == Reducing the Dimensionality with PCA
 
-  We can try to reduce the dimensionality using PCA, we see that the Naive Bayes approach achieves the best results compared to the other models. Specifically when paired with a number of PCA components equal to 2.
+  We can try to reduce the dimensionality using PCA, we see that the Naïve Bayes approach achieves the best results compared to the other models. Specifically when paired with a number of PCA components equal to 2.
 
   #figure(
     image("imgs/pca_to_gaussians.svg"),
@@ -496,7 +491,7 @@ The table above summarizes the various results, showing that the `Multi Variate 
         table.cell(fill: luma(250), [*Accuracy*], inset: 1em),
         table.cell(fill: luma(250), [*Error Rate*], inset: 1em),
         table.hline(stroke: 0.5pt + gray),
-        [*Naive Bayes*],
+        [*Naïve Bayes*],
         [90.61%],
         [9.39%],
         table.hline(stroke: 0.5pt),

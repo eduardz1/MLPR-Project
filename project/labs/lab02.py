@@ -18,12 +18,12 @@ different features. Analyze the plots.
     If so, where? Do the classes show similar mean for the first two features?
     Are the variances similar for the two classes? How many modes are evident
     from the histograms (i.e., how many “peaks” can be observed)?
--   Analyze the third and fourth features. What do you observe? Do the classes 
+-   Analyze the third and fourth features. What do you observe? Do the classes
     overlap? If so, where? Do the classes show similar mean for these two
     features? Are the variances similar for the two classes? How many modes are
     evident from the histograms?
 -   Analyze the last two features. What do you observe? Do the classes overlap?
-    If so, where? How many modes are evident from the histograms? How many 
+    If so, where? How many modes are evident from the histograms? How many
     clusters can you notice from the scatter plots for each class?
 """
 
