@@ -145,19 +145,19 @@ Looking at the scatter plot we see that there are four distinct clusters for eac
 
   We see that compared to the first principal the classes are mirrored but the separation is similar between the two methods.
 
-  === Applying LDA as a classifier
+  === Applying LDA as a classifier <lda-classifier>
 
   We now try to apply LDA as a classifier, we start by splitting the dataset in a training and validation set, then we fit the model on the training and evaluation set, then we calculate the optimal threshold for the classifier and finally, we evaluate the model on the validation set.
 
   ```python
-  # Split the dataset into training and validation sets
-  X_train, X_val, y_train, y_val = train_test_split(
-      X, y, test_size=0.33, random_state=0
+  # Split the dataset
+  (X_train, y_train), (X_val, y_val) = split_db_2to1(
+    X.T, y
   )
 
   # Fit the LDA model
-  _, X_train_lda = lda(X_train, y_train, 1)
-  _, X_val_lda = lda(X_val, y_val, 1)
+  _, X_train_lda = lda(X_train.T, y_train, 1)
+  _, X_val_lda = lda(X_val.T, y_val, 1)
 
   threshold = (
       X_train_lda[y_train == 0].mean() +
@@ -166,30 +166,28 @@ Looking at the scatter plot we see that there are four distinct clusters for eac
 
   # Predict the validation data
   y_pred = [
-    0 if x >= threshold else 1 for x in X_val_lda.T[0]
+    0
+    if x >= threshold
+    else 1
+    for x in X_val_lda.T[0]
   ]
-
-  print(f"Threshold: {threshold:.2f}")
-  print(f"Error rate: {
-    np.sum(y_val != y_pred) / y_val.size * 100:.2f
-  }%")
   ```
 
   ```
   Threshold: -0.02
-  Error rate: 9.60%
+  Error rate: 9.35%
   ```
 
-  Empirically we can find that threshold `0.04` gives a slightly better error rate of `9.34%`.
+  Empirically we can find that threshold `0.15` gives a slightly better error rate of `9.10%`.
 
   === Pre-processing the Data with PCA
 
   #figure(
-    caption: [Error rates in percentage as a function of the number of LDA directions],
+    caption: [Error rates in percentage as a function of the number of PCA directions],
     image("imgs/error_rate_pca.svg"),
   )
 
-  As we can see from the graph, pre-processing the data with PCA proves useful in reducing the error rate of the classifier slightly, in particular when choosing a number `N` of components equal to 2.
+  As we can see from the graph, pre-processing the data with PCA does not improve the classification results. With the number of dimensions set to 2 or 3, the accuracy even decreases slightly.
 ]
 
 #pagebreak()
@@ -242,12 +240,19 @@ Looking at the scatter plot we see that there are four distinct clusters for eac
   == Maximum Likelihood Estimates
 
   $
-  mu_("ML") = 1 / N sum_(i=1)^N x_i, space space sigma^2_("ML") = 1 / N sum_(i=1)^N (x_i - mu_("ML"))^2
+    mu_("ML") = 1 / N sum_(i=1)^N x_i, space space sigma^2_("ML") = 1 / N sum_(i=1)^N (x_i - mu_("ML"))^2
   $
 
   The ML estimates for the parameters of a `Uni-variate Gaussian` model correspond to the dataset mean and variance for each feature.
 
   The following table summarizes the ML estimates for the dataset features.
+
+  // $
+  //   mu_("ML") = mat(
+  //     0.003, 0.019, -0.681, 0.671, 0.028, -0.006;
+  //     0.001, -0.009, 0.665, -0.664, -0.042, 0.024; delim: "["
+  //   )
+  // $
 
   #table(
     columns: (auto, 1fr, 1fr),
@@ -333,13 +338,13 @@ Looking at the scatter plot we see that there are four distinct clusters for eac
         table.cell(fill: luma(250), [*Naïve Bayes*], inset: 1em),
         table.hline(stroke: 0.5pt + gray),
         [*Accuracy*],
-        [92.47%],
-        [90.35%],
-        [92.37%],
+        [93.00%],
+        [90.70%],
+        [92.80%],
         [*Error Rate*],
-        [7.53%],
-        [9.65%],
-        [7.63%],
+        [7.00%],
+        [9.30%],
+        [7.20%],
         table.hline(stroke: 0.5pt),
       )
     ],
@@ -349,7 +354,7 @@ Looking at the scatter plot we see that there are four distinct clusters for eac
 
 \
 
-The table above summarizes the various results, showing that the `Multi Variate Gaussian` model performs the best with an accuracy of `92.47%` and an error rate of `7.53%`. The difference between all the models is not too meaningful, however.
+The table above summarizes the various results, showing that the `Multi Variate Gaussian` model performs the best with an accuracy of `93%` and an error rate of `7%`. The `Tied Covariance Gaussian` model is the one that performs the worst. All the models perform better than `LDA` (see @lda-classifier[Lab 3 Section]).
 
 \
 
@@ -399,19 +404,19 @@ The table above summarizes the various results, showing that the `Multi Variate 
         table.cell(fill: luma(250), [*Error Rate*], inset: 1em),
         table.hline(stroke: 0.5pt + gray),
         [*Multivariate*],
-        [91.87%],
-        [8.13%],
+        [92.05%],
+        [7.95%],
         [*Tied Covariance*],
-        [90.10%],
-        [9.90%],
+        [90.50%],
+        [9.50%],
         [*Naïve Bayes*],
-        [91.77%],
-        [8.23%],
+        [92.35%],
+        [7.65%],
         table.hline(stroke: 0.5pt),
       )
     ],
     caption: [Classification results without the last two features],
-  )
+  ) <filter-last-two>
 
   == First Two Features
 
@@ -430,11 +435,11 @@ The table above summarizes the various results, showing that the `Multi Variate 
         table.cell(fill: luma(250), [*Error Rate*], inset: 1em),
         table.hline(stroke: 0.5pt + gray),
         [*Multivariate*],
-        [63.54%],
-        [36.46%],
+        [63.50%],
+        [36.50%],
         [*Tied Covariance*],
-        [49.60%],
-        [50.40%],
+        [50.55%],
+        [49.45%],
         table.hline(stroke: 0.5pt),
       )
     ],
@@ -460,11 +465,11 @@ The table above summarizes the various results, showing that the `Multi Variate 
         table.cell(fill: luma(250), [*Error Rate*], inset: 1em),
         table.hline(stroke: 0.5pt + gray),
         [*Multivariate*],
-        [90.25%],
-        [9.75%],
+        [90.55%],
+        [9.45%],
         [*Tied Covariance*],
-        [90.10%],
-        [9.90%],
+        [90.60%],
+        [9.40%],
         table.hline(stroke: 0.5pt),
       )
     ],
@@ -473,35 +478,37 @@ The table above summarizes the various results, showing that the `Multi Variate 
 
   == Reducing the Dimensionality with PCA
 
-  We can try to reduce the dimensionality using PCA, we see that the Naïve Bayes approach achieves the best results compared to the other models. Specifically when paired with a number of PCA components equal to 2.
+  We can try to reduce the dimensionality using PCA, we see that the `Multivariate Gaussian` model still performs the best from number of components $>= 4$, however the accuracy is still lower than the one obtained with the full dataset.
 
   #figure(
     image("imgs/pca_to_gaussians.svg"),
   )
 
-  #figure(
-    align(center)[
-      #set par(justify: false)
-      #table(
-        columns: 3,
-        align: center + horizon,
-        table.hline(stroke: 0.5pt),
-        inset: 1em,
-        table.cell(fill: luma(250), []),
-        table.cell(fill: luma(250), [*Accuracy*], inset: 1em),
-        table.cell(fill: luma(250), [*Error Rate*], inset: 1em),
-        table.hline(stroke: 0.5pt + gray),
-        [*Naïve Bayes*],
-        [90.61%],
-        [9.39%],
-        table.hline(stroke: 0.5pt),
-      )
-    ],
-  )
+  // #figure(
+  //   align(center)[
+  //     #set par(justify: false)
+  //     #table(
+  //       columns: 3,
+  //       align: center + horizon,
+  //       table.hline(stroke: 0.5pt),
+  //       inset: 1em,
+  //       table.cell(fill: luma(250), []),
+  //       table.cell(fill: luma(250), [*Accuracy*], inset: 1em),
+  //       table.cell(fill: luma(250), [*Error Rate*], inset: 1em),
+  //       table.hline(stroke: 0.5pt + gray),
+  //       [*Naïve Bayes*],
+  //       [90.61%],
+  //       [9.39%],
+  //       table.hline(stroke: 0.5pt),
+  //     )
+  //   ],
+  // )
 
-  Applying PCA to reduce the dimensionality, doesn't improve the classification accuracy compared to the full dataset or the dataset without the last two features. Selecting the first two principals components of PCA gets us back to results that are similar to @third-fourth-features.
+  Applying PCA to reduce the dimensionality, doesn't improve the classification accuracy compared to the full dataset or the dataset without the last two features.
 
-  Overall, the model that provided *the best* accuracy on the validation set is the `Multivariate Gaussian` model on the full dataset (@all-features).
+  == Conclusion
+
+  Overall, the model that provided *the best* accuracy on the validation set is the `Multivariate Gaussian` model on the full dataset (@all-features). When reducing the dataset to 4 features the best strategy is to filter out the last two features and select the `Naïve Bayes` model (@filter-last-two). When reducing the dataset to 2 features the best strategy for now is using LDA (@lda-classifier[Lab 3 Section]).
 ]
 
 #pagebreak(weak: true)

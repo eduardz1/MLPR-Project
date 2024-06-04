@@ -89,10 +89,10 @@ on the validation set?
 import numpy as np
 from rich.console import Console
 
-from project.classifiers.gaussian import Gaussian
+from project.classifiers.binary_gaussian import BinaryGaussian
 from project.figures.plots import heatmap, plot
 from project.figures.rich import table
-from project.funcs.common import load_data
+from project.funcs.base import load_data
 
 
 def lab5(DATA: str):
@@ -101,150 +101,154 @@ def lab5(DATA: str):
 
     X, y = load_data(DATA)
 
-    classifier = Gaussian(X, y)
+    cl = BinaryGaussian(X, y)
 
     # Analyze performance of various classifiers with the full dataset
 
-    accuracy, error_rate, llr = classifier.fit(multivariate=True)
+    cl.fit(classifier="multivariate")
     table(
         console,
         "MV Gaussian classifier",
         {
-            "Accuracy": [f"{accuracy:.2f}%"],
-            "Error rate": [f"{error_rate:.2f}%"],
+            "Accuracy": [f"{cl.accuracy:.2f}%"],
+            "Error rate": [f"{cl.error_rate:.2f}%"],
         },
-        llr,
+        cl.log_likelihood_ratio,
     )
 
-    accuracy, error_rate, _ = classifier.fit(tied=True)
+    cl.fit(classifier="tied")
     table(
         console,
         "Tied Covariance Gaussian classifier",
         {
-            "Accuracy": [f"{accuracy:.2f}%"],
-            "Error rate": [f"{error_rate:.2f}%"],
+            "Accuracy": [f"{cl.accuracy:.2f}%"],
+            "Error rate": [f"{cl.error_rate:.2f}%"],
         },
+        cl.log_likelihood_ratio,
     )
 
-    accuracy, error_rate, _ = classifier.fit(naive=True)
+    cl.fit(classifier="naive")
     table(
         console,
         "Naive Gaussian classifier",
         {
-            "Accuracy": [f"{accuracy:.2f}%"],
-            "Error rate": [f"{error_rate:.2f}%"],
+            "Accuracy": [f"{cl.accuracy:.2f}%"],
+            "Error rate": [f"{cl.error_rate:.2f}%"],
         },
+        cl.log_likelihood_ratio,
     )
 
     # Display the covariance matrix of each class
 
-    covariances = classifier.covariances
     table(
         console,
         "Covariance matrices",
         {
-            "Fake": [f"{covariances[0]}"],
-            "Genuine": [f"{covariances[1]}"],
+            "Fake": [f"{cl.covariances[0]}"],
+            "Genuine": [f"{cl.covariances[1]}"],
         },
     )
 
     # Display the correlation matrices of each class
 
-    correlation_matrices = classifier.corrcoef
     table(
         console,
         "Correlation matrices",
         {
-            "Fake": [f"{correlation_matrices[0]}"],
-            "Genuine": [f"{correlation_matrices[1]}"],
+            "Fake": [f"{cl.corrcoef[0]}"],
+            "Genuine": [f"{cl.corrcoef[1]}"],
         },
     )
 
     # Plot covariances and correlation matrices as heatmaps
 
-    heatmap(covariances[0], "Reds", "covariance_fake")
-    heatmap(covariances[1], "Blues", "covariance_genuine")
-    heatmap(correlation_matrices[0], "Reds", "correlation_fake")
-    heatmap(correlation_matrices[1], "Blues", "correlation_genuine")
+    heatmap(cl.covariances[0], "Reds", "covariance_fake")
+    heatmap(cl.covariances[1], "Blues", "covariance_genuine")
+    heatmap(cl.corrcoef[0], "Reds", "correlation_fake")
+    heatmap(cl.corrcoef[1], "Blues", "correlation_genuine")
 
     # Try again repeating the classification without the last two features,
     # which do not fit well with the Gaussian assumption
 
-    accuracy, error_rate, llr = classifier.fit(multivariate=True, slice=slice(-2))
+    cl.fit(classifier="multivariate", slicer=slice(-2))
     table(
         console,
         "MV Gaussian classifier (without last two features)",
         {
-            "Accuracy": [f"{accuracy:.2f}%"],
-            "Error rate": [f"{error_rate:.2f}%"],
+            "Accuracy": [f"{cl.accuracy:.2f}%"],
+            "Error rate": [f"{cl.error_rate:.2f}%"],
         },
-        llr,
+        cl.log_likelihood_ratio,
     )
 
-    accuracy, error_rate, _ = classifier.fit(tied=True, slice=slice(-2))
+    cl.fit(classifier="tied", slicer=slice(-2))
     table(
         console,
         "Tied Covariance Gaussian classifier (without last two features)",
         {
-            "Accuracy": [f"{accuracy:.2f}%"],
-            "Error rate": [f"{error_rate:.2f}%"],
+            "Accuracy": [f"{cl.accuracy:.2f}%"],
+            "Error rate": [f"{cl.error_rate:.2f}%"],
         },
+        cl.log_likelihood_ratio,
     )
 
-    accuracy, error_rate, _ = classifier.fit(naive=True, slice=slice(-2))
+    cl.fit(classifier="naive", slicer=slice(-2))
     table(
         console,
         "Naive Gaussian classifier (without last two features)",
         {
-            "Accuracy": [f"{accuracy:.2f}%"],
-            "Error rate": [f"{error_rate:.2f}%"],
+            "Accuracy": [f"{cl.accuracy:.2f}%"],
+            "Error rate": [f"{cl.error_rate:.2f}%"],
         },
+        cl.log_likelihood_ratio,
     )
 
     # Benchmark MVG and Tied Covariance Gaussian classifiers for first two features
 
-    accuracy, error_rate, llr = classifier.fit(multivariate=True, slice=slice(2))
+    cl.fit(classifier="multivariate", slicer=slice(2))
     table(
         console,
         "MV Gaussian classifier (first two features)",
         {
-            "Accuracy": [f"{accuracy:.2f}%"],
-            "Error rate": [f"{error_rate:.2f}%"],
+            "Accuracy": [f"{cl.accuracy:.2f}%"],
+            "Error rate": [f"{cl.error_rate:.2f}%"],
         },
-        llr,
+        cl.log_likelihood_ratio,
     )
 
-    accuracy, error_rate, _ = classifier.fit(tied=True, slice=slice(2))
+    cl.fit(classifier="tied", slicer=slice(2))
     table(
         console,
         "Tied Covariance Gaussian classifier (first two features)",
         {
-            "Accuracy": [f"{accuracy:.2f}%"],
-            "Error rate": [f"{error_rate:.2f}%"],
+            "Accuracy": [f"{cl.accuracy:.2f}%"],
+            "Error rate": [f"{cl.error_rate:.2f}%"],
         },
+        cl.log_likelihood_ratio,
     )
 
     # Benchmark MVG and Tied Covariance Gaussian classifiers for third and fourth features
 
-    accuracy, error_rate, llr = classifier.fit(multivariate=True, slice=slice(2, 4))
+    cl.fit(classifier="multivariate", slicer=slice(2, 4))
     table(
         console,
         "MV Gaussian classifier (third and fourth features)",
         {
-            "Accuracy": [f"{accuracy:.2f}%"],
-            "Error rate": [f"{error_rate:.2f}%"],
+            "Accuracy": [f"{cl.accuracy:.2f}%"],
+            "Error rate": [f"{cl.error_rate:.2f}%"],
         },
-        llr,
+        cl.log_likelihood_ratio,
     )
 
-    accuracy, error_rate, _ = classifier.fit(tied=True, slice=slice(2, 4))
+    cl.fit(classifier="tied", slicer=slice(2, 4))
     table(
         console,
         "Tied Covariance Gaussian classifier (third and fourth features)",
         {
-            "Accuracy": [f"{accuracy:.2f}%"],
-            "Error rate": [f"{error_rate:.2f}%"],
+            "Accuracy": [f"{cl.accuracy:.2f}%"],
+            "Error rate": [f"{cl.error_rate:.2f}%"],
         },
+        cl.log_likelihood_ratio,
     )
 
     # Try to reduce the dimensionality with PCA
@@ -254,14 +258,14 @@ def lab5(DATA: str):
     accuracies_naive = []
 
     for i in range(1, 7):
-        accuracy, _, _ = classifier.fit(multivariate=True, pca=True, pca_dimensions=i)
-        accuracies_mvg.append(accuracy)
+        cl.fit(classifier="multivariate", pca_dimensions=i)
+        accuracies_mvg.append(cl.accuracy)
 
-        accuracy, _, _ = classifier.fit(tied=True, pca=True, pca_dimensions=i)
-        accuracies_tied.append(accuracy)
+        cl.fit(classifier="tied", pca_dimensions=i)
+        accuracies_tied.append(cl.accuracy)
 
-        accuracy, _, _ = classifier.fit(naive=True, pca=True, pca_dimensions=i)
-        accuracies_naive.append(accuracy)
+        cl.fit(classifier="naive", pca_dimensions=i)
+        accuracies_naive.append(cl.accuracy)
 
     plot(
         {

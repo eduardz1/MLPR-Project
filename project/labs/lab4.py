@@ -25,7 +25,7 @@ from rich.console import Console
 
 from project.figures.plots import densities
 from project.figures.rich import table
-from project.funcs.common import load_data
+from project.funcs.base import load_data
 from project.funcs.logpdf import log_pdf
 
 

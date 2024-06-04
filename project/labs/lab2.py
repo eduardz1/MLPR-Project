@@ -28,7 +28,7 @@ different features. Analyze the plots.
 """
 
 from project.figures.plots import hist, scatter
-from project.funcs.common import load_data
+from project.funcs.base import load_data
 
 
 def lab2(DATA: str):

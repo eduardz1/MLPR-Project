@@ -2,7 +2,7 @@ import numpy as np
 import numpy.typing as npt
 
 
-def check_params(X: npt.NDArray, mu: npt.NDArray, C: npt.NDArray) -> None:
+def _check_params(X: npt.NDArray, mu: npt.NDArray, C: npt.NDArray) -> None:
     # fmt: off
     assert len(X.shape) == 2, f"X must be a 2D array, got {len(X.shape)}"
     assert len(mu) == X.shape[0], f"mu must have the same number of rows as X ({X.shape[0]}), got {len(mu)}"
@@ -27,7 +27,7 @@ def log_pdf(X: npt.NDArray, mu: npt.NDArray, C: npt.NDArray) -> npt.NDArray:
     mu = np.atleast_1d(mu)
     C = np.atleast_2d(C)
 
-    check_params(X, mu, C)
+    _check_params(X, mu, C)
 
     return -0.5 * (
         X.shape[0] * np.log(2 * np.pi)

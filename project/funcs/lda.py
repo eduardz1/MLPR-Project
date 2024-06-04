@@ -2,6 +2,8 @@ import numpy as np
 import numpy.typing as npt
 import scipy
 
+from project.funcs.base import cov, vcol, vrow
+
 
 def lda(
     X: npt.NDArray, y: npt.ArrayLike, m: int | None = None
@@ -20,28 +22,22 @@ def lda(
         LDA_data: [N x m] matrix with the data projected onto the LDA directions
     """
 
-    unique_labels = np.unique(y)
-    means = np.array([np.mean(X[y == c], axis=0) for c in unique_labels])
+    labels = np.unique(y)
+    means = np.array([np.mean(X[y == c], axis=0) for c in labels])
     global_mean = np.mean(X, axis=0)
-    weights = np.array([len(X[y == c]) for c in unique_labels])
+    weights = np.array([len(X[y == c]) for c in labels])
 
     # fmt: off
     # Compute the between-class covariance matrix
     Sb = np.average(
-        [
-            np.outer(means[c] - global_mean, means[c] - global_mean)
-            for c in unique_labels
-        ],
+        [vcol(mu := (means[c] - global_mean)) @ vrow(mu) for c in labels],
         axis=0,
-        weights=weights
+        weights=weights,
     )
 
     # Compute the within-class covariance matrix
     Sw = np.average(
-        [   # ndmin=2 to handle the case where there is only one dimension
-            np.array(np.cov(X[y == c].T, bias=True), ndmin=2)
-            for c in unique_labels
-        ],
+        [cov(X[y == c].T) for c in labels],
         axis=0,
         weights=weights
     )

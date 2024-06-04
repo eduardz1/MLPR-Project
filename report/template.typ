@@ -53,7 +53,7 @@
 
   set table(stroke: none)
 
-  show raw.where(block: true): set text(size: 0.7em, font: "Fira Code")
+  show raw.where(block: true): set text(size: 0.8em)
   show raw.where(block: true): set par(justify: false)
   show raw.where(block: true): block.with(
     fill: luma(250),

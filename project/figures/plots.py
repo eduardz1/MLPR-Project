@@ -38,9 +38,7 @@ def _hist(args):
     )
 
     plt.tight_layout()
-
     plt.savefig(f"{IMG_FOLDER}/hist/{kwargs.get('file_name')}_{i}.svg")
-
     plt.clf()
 
 
@@ -66,37 +64,26 @@ def _scatter(args):
     plt.ioff()
     plt.figure(figsize=kwargs.get("figsize", FIG_SIZE))
 
-    # Extremely ugly but it normalizes dynamically tuples of features
+    # Plot first both classes so that x and y axis are the same size, then plot
+    # the two classes separately to blend the svgs and better show the overlap
+    # between the two classes, this is not possible at the moment directly in
+    # matplotlib because there is no way to change the blending mode
 
-    plt.scatter(X[y == 0][:, i], X[y == 0][:, j])
-    xlim_0 = plt.gca().get_xlim()
-    ylim_0 = plt.gca().get_ylim()
-    plt.clf()
-
-    plt.scatter(X[y == 1][:, i], X[y == 1][:, j])
-    xlim_1 = plt.gca().get_xlim()
-    ylim_1 = plt.gca().get_ylim()
-    plt.clf()
-
-    xlim = [min(xlim_0[0], xlim_1[0]), max(xlim_0[1], xlim_1[1])]
-    ylim = [min(ylim_0[0], ylim_1[0]), max(ylim_0[1], ylim_1[1])]
-
-    plt.scatter(
+    fakes = plt.scatter(
         X[y == 0][:, i],
         X[y == 0][:, j],
         alpha=0.6,
         color="red",
         rasterized=True,
     )
-    plt.xlim(xlim)
-    plt.ylim(ylim)
+    genuines = plt.scatter(X[y == 1][:, i], X[y == 1][:, j])
     plt.tight_layout()
+    genuines.remove()
     plt.savefig(
         f"{IMG_FOLDER}/scatter/single/fake_{i}_{j}.svg",
         transparent=True,
         dpi=300,
     )
-    plt.clf()
 
     plt.scatter(
         X[y == 1][:, i],
@@ -105,9 +92,7 @@ def _scatter(args):
         color="blue",
         rasterized=True,
     )
-    plt.xlim(xlim)
-    plt.ylim(ylim)
-    plt.tight_layout()
+    fakes.remove()
     plt.savefig(
         f"{IMG_FOLDER}/scatter/single/genuine_{i}_{j}.svg",
         transparent=True,
@@ -115,7 +100,9 @@ def _scatter(args):
     )
     plt.clf()
 
-    # Needed to better visualize difference between overlapping points
+    # Needed to better visualize difference between overlapping points, it's
+    # faster to parse SVG files rather than using the .tostring() method on a
+    # StringIO or BytesIO object
     blend_svgs(
         f"{IMG_FOLDER}/scatter/single/fake_{i}_{j}.svg",
         f"{IMG_FOLDER}/scatter/single/genuine_{i}_{j}.svg",
@@ -146,7 +133,7 @@ def scatter(X, y, **kwargs):
                 progress.update(task, advance=1)
 
 
-def plot(dict: dict[str, list], range: range, **kwargs) -> None:
+def plot(dict: dict[str, list], range: npt.ArrayLike, **kwargs) -> None:
     plt.ioff()
     plt.figure(figsize=kwargs.get("figsize", FIG_SIZE))
 
@@ -155,6 +142,9 @@ def plot(dict: dict[str, list], range: range, **kwargs) -> None:
 
     plt.xlabel(kwargs.get("xlabel", "x"))
     plt.ylabel(kwargs.get("ylabel", "y"))
+
+    if "xscale" in kwargs:
+        plt.xscale(kwargs.get("xscale", "log"), base=kwargs.get("base", 10))
 
     plt.legend()
     plt.tight_layout()
