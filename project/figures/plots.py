@@ -1,4 +1,4 @@
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 from typing import Callable
 
 import matplotlib.pyplot as plt
@@ -14,6 +14,7 @@ from rich.progress import Progress, SpinnerColumn, TimeElapsedColumn
 BINS = "rice"
 FIG_SIZE = (8, 6)  # Size of each figure in inches
 IMG_FOLDER = "report/imgs"
+POOL_SIZE = cpu_count() - 1
 
 
 def _hist(args):
@@ -50,7 +51,7 @@ def hist(X, y, **kwargs):
     ) as progress:
         task_id = progress.add_task("Plotting histograms...   ", total=X.shape[1])
 
-        with Pool(X.shape[1]) as pool:
+        with Pool(POOL_SIZE) as pool:
             for _ in pool.imap_unordered(
                 _hist,
                 [(X, y, i, kwargs) for i in range(X.shape[1])],
@@ -120,7 +121,7 @@ def scatter(X, y, **kwargs):
             "Plotting scatter plots...", total=X.shape[1] ** 2 - X.shape[1]
         )
 
-        with Pool(X.shape[1] ** 2 - X.shape[1]) as pool:
+        with Pool(POOL_SIZE) as pool:
             for _ in pool.imap_unordered(
                 _scatter,
                 [
@@ -168,7 +169,7 @@ def densities(
             "Plotting gaussian densities...", total=len(np.unique(y) * X.shape[1])
         )
 
-        with Pool(len(np.unique(y) * X.shape[1])) as pool:
+        with Pool(POOL_SIZE) as pool:
             for _ in pool.imap_unordered(
                 _densities,
                 [
