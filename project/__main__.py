@@ -84,8 +84,6 @@ def parse_args():
 
 
 def main():
-    os.environ["NUMBA_DISABLE_PERFORMANCE_WARNINGS"] = "1"
-
     console = Console()
 
     # TODO: Enable this once python 3.12 support is added

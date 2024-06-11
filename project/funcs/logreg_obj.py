@@ -2,7 +2,7 @@ import numpy as np
 import numpy.typing as npt
 from numba import njit
 
-from project.funcs.base import vcol, vrow
+from project.funcs.base import vrow
 
 
 @njit
@@ -23,7 +23,7 @@ def __logreg_obj(
 
     w, b = v[:-1], v[-1]
     ZTR = 2 * LTR - 1
-    S = (vcol(w).T @ DTR + b).ravel()
+    S = (w @ np.ascontiguousarray(DTR) + b).ravel()
     G = -ZTR / (1 + np.exp(ZTR * S))
 
     if prior is not None:

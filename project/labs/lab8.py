@@ -79,7 +79,7 @@ import numpy as np
 import scipy.optimize as opt
 
 from project.figures.plots import plot
-from project.funcs.base import load_data, split_db_2to1, vcol
+from project.funcs.base import load_data, split_db_2to1
 from project.funcs.dcf import dcf
 from project.funcs.logreg_obj import logreg_obj
 
@@ -88,6 +88,8 @@ def lab8(DATA: str):
     X, y = load_data(DATA)
 
     (X_train, y_train), (X_val, y_val) = split_db_2to1(X.T, y)
+
+    X_train = np.ascontiguousarray(X_train)
 
     # Fractions of samples of class 1
     pi_emp = np.mean(y_train)
@@ -115,7 +117,7 @@ def lab8(DATA: str):
             quadratic=False,
         )
 
-        x, f, d = opt.fmin_l_bfgs_b(
+        x, f, _ = opt.fmin_l_bfgs_b(
             logReg,
             np.zeros(X_train.shape[0] + 1),
             approx_grad=True,
@@ -123,7 +125,7 @@ def lab8(DATA: str):
 
         w, b = x[:-1], x[-1]
 
-        S = vcol(w).T @ X_val + b
+        S = w @ X_val + b
         LP = S > 0
         error_rate = np.mean(LP != y_val)
 
@@ -182,7 +184,7 @@ def lab8(DATA: str):
 
         w, b = x[:-1], x[-1]
 
-        S = vcol(w).T @ X_val + b
+        S = w @ X_val + b
         LP = S > 0
         error_rate = np.mean(LP != y_val)
 
@@ -232,7 +234,7 @@ def lab8(DATA: str):
             quadratic=False,
         )
 
-        x, f, d = opt.fmin_l_bfgs_b(
+        x, f, _ = opt.fmin_l_bfgs_b(
             logReg,
             np.zeros(X_train.shape[0] + 1),
             approx_grad=True,
@@ -240,7 +242,7 @@ def lab8(DATA: str):
 
         w, b = x[:-1], x[-1]
 
-        S = vcol(w).T @ X_val + b
+        S = w @ X_val + b
         LP = S > 0
         error_rate = np.mean(LP != y_val)
 
@@ -298,7 +300,7 @@ def lab8(DATA: str):
 
         w, b = x[:-1], x[-1]
 
-        S = vcol(w).T @ X_val + b
+        S = w @ X_val + b
         LP = S > 0
         error_rate = np.mean(LP != y_val)
 

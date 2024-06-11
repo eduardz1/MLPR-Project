@@ -56,8 +56,11 @@ def lab3(DATA: str):
 
     (X_train, y_train), (X_val, y_val) = split_db_2to1(X.T, y)
 
-    _, X_train_lda = lda(X_train.T, y_train, 1)
-    _, X_val_lda = lda(X_val.T, y_val, 1)
+    X_train = X_train.T
+    X_val = X_val.T
+
+    _, X_train_lda = lda(X_train, y_train, 1)
+    _, X_val_lda = lda(X_val, y_val, 1)
 
     threshold = (
         X_train_lda[y_train == 0].mean() + X_train_lda[y_train == 1].mean()
@@ -98,10 +101,10 @@ def lab3(DATA: str):
 
     error_rates_pca = []  # Error rates in percentage
     for i in range(1, X.shape[1] + 1):
-        X_train_pca = pca(X_train.T, i)[1]
+        X_train_pca = pca(X_train, i)[1]
 
         _, X_train_lda = lda(X_train_pca, y_train, 1)
-        _, X_val_lda = lda(X_val.T, y_val, 1)
+        _, X_val_lda = lda(X_val, y_val, 1)
 
         threshold = (
             X_train_lda[y_train == 0].mean() + X_train_lda[y_train == 1].mean()

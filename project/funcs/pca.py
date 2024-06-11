@@ -62,4 +62,8 @@ def pca(X: npt.NDArray, m: int | None = None) -> tuple[npt.NDArray, npt.NDArray]
     # Take the first m eigenvectors
     directions = U[:, :m]
 
+    # Make arrays contiguous for better performance
+    directions = np.ascontiguousarray(directions)
+    X = np.ascontiguousarray(X)
+
     return directions, np.dot(X, directions)
