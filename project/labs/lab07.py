@@ -54,7 +54,7 @@ from project.funcs.dcf import effective_prior as effective_prior
 from project.funcs.dcf import optimal_bayes_threshold
 
 
-def lab7(DATA: str):
+def lab07(DATA: str):
     X, y = load_data(DATA)
 
     _, (_, y_val) = split_db_2to1(X.T, y)

@@ -95,7 +95,7 @@ from project.figures.rich import table
 from project.funcs.base import load_data
 
 
-def lab5(DATA: str):
+def lab05(DATA: str):
     console = Console()
     np.set_printoptions(precision=3, suppress=True)
 

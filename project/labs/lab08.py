@@ -84,7 +84,7 @@ from project.funcs.dcf import dcf
 from project.funcs.logreg_obj import logreg_obj
 
 
-def lab8(DATA: str):
+def lab08(DATA: str):
     X, y = load_data(DATA)
 
     (X_train, y_train), (X_val, y_val) = split_db_2to1(X.T, y)

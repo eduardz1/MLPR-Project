@@ -5,23 +5,23 @@ import typst
 from rich.console import Console
 from rich.status import Status
 
-from project.labs.lab2 import lab2
-from project.labs.lab3 import lab3
-from project.labs.lab4 import lab4
-from project.labs.lab5 import lab5
-from project.labs.lab7 import lab7
-from project.labs.lab8 import lab8
+from project.labs.lab02 import lab02
+from project.labs.lab03 import lab03
+from project.labs.lab04 import lab04
+from project.labs.lab05 import lab05
+from project.labs.lab07 import lab07
+from project.labs.lab08 import lab08
 
 TYPST_PATH = "report/report.typ"
 DATA = "data/trainData.txt"
 
 conf = {
-    "lab2": False,
-    "lab3": False,
-    "lab4": False,
-    "lab5": False,
-    "lab7": False,
-    "lab8": False,
+    "lab02": False,
+    "lab03": False,
+    "lab04": False,
+    "lab05": False,
+    "lab07": False,
+    "lab08": False,
     "compile_pdf": False,
 }
 
@@ -59,26 +59,26 @@ def parse_args():
     args = parser.parse_args()
 
     if args.all:
-        conf["lab2"] = True
-        conf["lab3"] = True
-        conf["lab4"] = True
-        conf["lab5"] = True
-        conf["lab7"] = True
-        conf["lab8"] = True
+        conf["lab02"] = True
+        conf["lab03"] = True
+        conf["lab04"] = True
+        conf["lab05"] = True
+        conf["lab07"] = True
+        conf["lab08"] = True
     else:
         for lab in args.labs:
             if lab == 2:
-                conf["lab2"] = True
+                conf["lab02"] = True
             elif lab == 3:
-                conf["lab3"] = True
+                conf["lab03"] = True
             elif lab == 4:
-                conf["lab4"] = True
+                conf["lab04"] = True
             elif lab == 5:
-                conf["lab5"] = True
+                conf["lab05"] = True
             elif lab == 7:
-                conf["lab7"] = True
+                conf["lab07"] = True
             elif lab == 8:
-                conf["lab8"] = True
+                conf["lab08"] = True
     if args.compile_pdf:
         conf["compile_pdf"] = True
 
@@ -93,37 +93,37 @@ def main():
 
     parse_args()
 
-    if conf["lab2"]:
+    if conf["lab02"]:
         console.log("[bold red]Lab 2 - Analyzing the features [/bold red]")
-        lab2(DATA)
+        lab02(DATA)
 
-    if conf["lab3"]:
+    if conf["lab03"]:
         console.log("[bold red]Lab 3 - PCA & LDA [/bold red]")
-        lab3(DATA)
+        lab03(DATA)
 
-    if conf["lab4"]:
+    if conf["lab04"]:
         console.log(
             "[bold red]Lab 4 - Probability densities and ML estimates [/bold red]"
         )
-        lab4(DATA)
+        lab04(DATA)
 
-    if conf["lab5"]:
+    if conf["lab05"]:
         console.log(
             "[bold red]Lab 5 - Generative models for classification [/bold red]"
         )
-        lab5(DATA)
+        lab05(DATA)
 
-    if conf["lab7"]:
+    if conf["lab07"]:
         console.log(
             "[bold red]Lab 7 - Performance analysis of the MVG classifier [/bold red]"
         )
-        lab7(DATA)
+        lab07(DATA)
 
-    if conf["lab8"]:
+    if conf["lab08"]:
         console.log(
             "[bold red]Lab 8 - Performance analysis of the Binary Logistic Regression classifier [/bold red]"
         )
-        lab8(DATA)
+        lab08(DATA)
 
     if conf["compile_pdf"]:
         status = Status("Compiling the report...")

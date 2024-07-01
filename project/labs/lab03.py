@@ -41,7 +41,7 @@ from project.funcs.lda import lda
 from project.funcs.pca import pca
 
 
-def lab3(DATA: str):
+def lab03(DATA: str):
     console = Console()
 
     X, y = load_data(DATA)

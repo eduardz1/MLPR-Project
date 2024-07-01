@@ -29,7 +29,7 @@ from project.funcs.base import load_data
 from project.funcs.logpdf import log_pdf
 
 
-def lab4(DATA: str):
+def lab04(DATA: str):
     np.set_printoptions(precision=3, suppress=True)
     X, y = load_data(DATA)
 
