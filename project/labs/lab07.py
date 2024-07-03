@@ -127,15 +127,15 @@ def lab07(DATA: str):
             )
             print(f"DCF: {d}")
 
-            if d < best_setups[pi][0]:
-                best_setups[pi] = (d, "multivariate", m)
-
-            if pi == 0.1 and d < best_pca_01_setups["multivariate"][0]:
-                best_pca_01_setups["multivariate"] = (d, m)
 
             min_dcf = dcf(
                 cl.log_likelihood_ratio, y_val, pi, 1, 1, normalize=True, strategy="min"
             )
+            if min_dcf < best_setups[pi][0]:
+                best_setups[pi] = (min_dcf, "multivariate", m)
+
+            if pi == 0.1 and d < best_pca_01_setups["multivariate"][0]:
+                best_pca_01_setups["multivariate"] = (min_dcf, m)
             print(f"Minimum DCF: {min_dcf}")
             print()
 
