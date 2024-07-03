@@ -1,4 +1,5 @@
 import argparse
+import contextlib
 import os
 
 import typst
@@ -23,6 +24,7 @@ conf = {
     "lab07": False,
     "lab08": False,
     "compile_pdf": False,
+    "quiet": False,
 }
 
 
@@ -35,6 +37,12 @@ def parse_args():
         "--compile_pdf",
         action="store_true",
         help="compile the report in pdf format",
+    )
+    parser.add_argument(
+        "-q",
+        "--quiet",
+        action="store_true",
+        help="suppress additional information during code execution",
     )
     group = parser.add_argument_group(
         "labs", "Choose which part of the project, ordered by labs, to run"
@@ -81,6 +89,8 @@ def parse_args():
                 conf["lab08"] = True
     if args.compile_pdf:
         conf["compile_pdf"] = True
+    if args.quiet:
+        conf["quiet"] = True
 
 
 def main():
@@ -93,43 +103,51 @@ def main():
 
     parse_args()
 
-    if conf["lab02"]:
-        console.log("[bold red]Lab 2 - Analyzing the features [/bold red]")
-        lab02(DATA)
+    def run_labs():
+        if conf["lab02"]:
+            console.log("[bold red]Lab 2 - Analyzing the features [/bold red]")
+            lab02(DATA)
 
-    if conf["lab03"]:
-        console.log("[bold red]Lab 3 - PCA & LDA [/bold red]")
-        lab03(DATA)
+        if conf["lab03"]:
+            console.log("[bold red]Lab 3 - PCA & LDA [/bold red]")
+            lab03(DATA)
 
-    if conf["lab04"]:
-        console.log(
-            "[bold red]Lab 4 - Probability densities and ML estimates [/bold red]"
-        )
-        lab04(DATA)
+        if conf["lab04"]:
+            console.log(
+                "[bold red]Lab 4 - Probability densities and ML estimates [/bold red]"
+            )
+            lab04(DATA)
 
-    if conf["lab05"]:
-        console.log(
-            "[bold red]Lab 5 - Generative models for classification [/bold red]"
-        )
-        lab05(DATA)
+        if conf["lab05"]:
+            console.log(
+                "[bold red]Lab 5 - Generative models for classification [/bold red]"
+            )
+            lab05(DATA)
 
-    if conf["lab07"]:
-        console.log(
-            "[bold red]Lab 7 - Performance analysis of the MVG classifier [/bold red]"
-        )
-        lab07(DATA)
+        if conf["lab07"]:
+            console.log(
+                "[bold red]Lab 7 - Performance analysis of the MVG classifier [/bold red]"
+            )
+            lab07(DATA)
 
-    if conf["lab08"]:
-        console.log(
-            "[bold red]Lab 8 - Performance analysis of the Binary Logistic Regression classifier [/bold red]"
-        )
-        lab08(DATA)
+        if conf["lab08"]:
+            console.log(
+                "[bold red]Lab 8 - Performance analysis of the Binary Logistic Regression classifier [/bold red]"
+            )
+            lab08(DATA)
 
-    if conf["compile_pdf"]:
-        status = Status("Compiling the report...")
-        status.start()
-        typst.compile(TYPST_PATH, output=TYPST_PATH.replace(".typ", ".pdf"))
-        status.stop()
+        if conf["compile_pdf"]:
+            status = Status("Compiling the report...")
+            status.start()
+            typst.compile(TYPST_PATH, output=TYPST_PATH.replace(".typ", ".pdf"))
+            status.stop()
+
+    if conf["quiet"]:
+        # Suppress output by redirecting stdout to /dev/null
+        with open(os.devnull, "w") as f, contextlib.redirect_stdout(f):
+            run_labs()
+    else:
+        run_labs()
 
 
 if __name__ == "__main__":

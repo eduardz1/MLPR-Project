@@ -31,3 +31,5 @@ To build the report you can pass the `--compile_pdf` flag, for example:
 ```bash
 python -m project --compile_pdf --all
 ```
+
+You can also suppress the output with the `--quiet` flag.
