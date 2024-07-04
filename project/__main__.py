@@ -12,6 +12,7 @@ from project.labs.lab04 import lab04
 from project.labs.lab05 import lab05
 from project.labs.lab07 import lab07
 from project.labs.lab08 import lab08
+from project.labs.lab09 import lab09
 
 TYPST_PATH = "report/report.typ"
 DATA = "data/trainData.txt"
@@ -23,6 +24,7 @@ conf = {
     "lab05": False,
     "lab07": False,
     "lab08": False,
+    "lab09": False,
     "compile_pdf": False,
     "quiet": False,
 }
@@ -73,6 +75,7 @@ def parse_args():
         conf["lab05"] = True
         conf["lab07"] = True
         conf["lab08"] = True
+        conf["lab09"] = True
     else:
         for lab in args.labs:
             if lab == 2:
@@ -87,6 +90,8 @@ def parse_args():
                 conf["lab07"] = True
             elif lab == 8:
                 conf["lab08"] = True
+            elif lab == 9:
+                conf["lab09"] = True
     if args.compile_pdf:
         conf["compile_pdf"] = True
     if args.quiet:
@@ -99,7 +104,7 @@ def main():
     # TODO: Enable this once python 3.12 support is added
     # https://github.com/matplotlib/mplcairo/issues/51
     # os.environ["MPLBACKEND"] = "module://mplcairo.base"
-    os.environ["MPLBACKEND"] = "Agg"
+    # os.environ["MPLBACKEND"] = "Agg"
 
     parse_args()
 
@@ -135,6 +140,12 @@ def main():
                 "[bold red]Lab 8 - Performance analysis of the Binary Logistic Regression classifier [/bold red]"
             )
             lab08(DATA)
+
+        if conf["lab09"]:
+            console.log(
+                "[bold red]Lab 9 - Performance analysis of the Multi-class Logistic Regression classifier [/bold red]"
+            )
+            lab09(DATA)
 
         if conf["compile_pdf"]:
             status = Status("Compiling the report...")

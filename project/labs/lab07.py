@@ -57,9 +57,9 @@ from project.funcs.dcf import optimal_bayes_threshold
 def lab07(DATA: str):
     X, y = load_data(DATA)
 
-    _, (_, y_val) = split_db_2to1(X.T, y)
+    (X_train, y_train), (X_val, y_val) = split_db_2to1(X.T, y)
 
-    cl = BinaryGaussian(X, y)
+    cl = BinaryGaussian(X_train, y_train, X_val, y_val)
 
     applications = {
         "pi_T": [0.5, 0.9, 0.1, 0.5, 0.5],
@@ -126,7 +126,6 @@ def lab07(DATA: str):
                 strategy="optimal",
             )
             print(f"DCF: {d}")
-
 
             min_dcf = dcf(
                 cl.log_likelihood_ratio, y_val, pi, 1, 1, normalize=True, strategy="min"

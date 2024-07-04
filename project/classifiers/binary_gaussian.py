@@ -5,7 +5,7 @@ import numpy as np
 import numpy.typing as npt
 from deprecated import deprecated
 
-from project.funcs.base import corr, cov, split_db_2to1
+from project.funcs.base import corr, cov
 from project.funcs.logpdf import log_pdf
 from project.funcs.pca import pca
 
@@ -16,17 +16,23 @@ class BinaryGaussian:
     with different strategies and configurations.
 
     Attributes:
-        X (NDArray): The data matrix.
-        y (NDArray): The target vector.
+        X_train (npt.NDArray): Training data.
+        y_train (npt.NDArray): Training labels.
+        X_val (npt.NDArray): Validation data.
+        y_val (npt.NDArray): Validation labels.
     """
 
-    def __init__(self, X: npt.NDArray, y: npt.NDArray) -> None:
-        self.X = X
-        self.y = y
-
-        (self.__X_train, self.__y_train), (self.__X_val, self.__y_val) = split_db_2to1(
-            X.T, y
-        )
+    def __init__(
+        self,
+        X_train: npt.NDArray,
+        y_train: npt.NDArray,
+        X_val: npt.NDArray,
+        y_val: npt.NDArray,
+    ) -> None:
+        self.__X_train = X_train
+        self.__y_train = y_train
+        self.__X_val = X_val
+        self.__y_val = y_val
 
         # Score matrix containing the class-conditional probabilities
         self.__S = np.zeros((2, self.__X_val.shape[1]))

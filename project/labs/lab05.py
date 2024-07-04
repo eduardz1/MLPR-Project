@@ -92,7 +92,7 @@ from rich.console import Console
 from project.classifiers.binary_gaussian import BinaryGaussian
 from project.figures.plots import heatmap, plot
 from project.figures.rich import table
-from project.funcs.base import load_data
+from project.funcs.base import load_data, split_db_2to1
 
 
 def lab05(DATA: str):
@@ -101,7 +101,9 @@ def lab05(DATA: str):
 
     X, y = load_data(DATA)
 
-    cl = BinaryGaussian(X, y)
+    (X_train, y_train), (X_val, y_val) = split_db_2to1(X.T, y)
+
+    cl = BinaryGaussian(X_train, y_train, X_val, y_val)
 
     # Analyze performance of various classifiers with the full dataset
 

@@ -71,7 +71,6 @@ def logreg_obj(
     DTR: npt.NDArray[np.float64],
     LTR: npt.NDArray[np.int64],
     l: float,
-    quadratic: bool,
 ) -> tuple[float, npt.NDArray[np.float64]] | float:
     """
     Logistic Regression Objective Function
@@ -91,7 +90,6 @@ def logreg_obj(
             objective function and its gradient if approx_grad is False,
             otherwise only the value of the objective function
     """
-
     # This function wraps the real implementation to manage etheroegeneous
     # return types in the numba.jit compiled function
     result = __logreg_obj(
