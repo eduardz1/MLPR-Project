@@ -60,7 +60,7 @@ def parse_args():
     exclusive_group.add_argument(
         "-l",
         "--labs",
-        choices=[2, 3, 4, 5, 7, 8],
+        choices=[2, 3, 4, 5, 7, 8, 9],
         type=int,
         nargs="+",
         help="run specific project parts by specifying one of more associated lab numbers",
@@ -143,7 +143,7 @@ def main():
 
         if conf["lab09"]:
             console.log(
-                "[bold red]Lab 9 - Performance analysis of the Multi-class Logistic Regression classifier [/bold red]"
+                "[bold red]Lab 9 - Support Vector Machines classification [/bold red]"
             )
             lab09(DATA)
 

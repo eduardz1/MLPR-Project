@@ -1,4 +1,6 @@
 """
+# Performance analysis of the Binary Logistic Regression classifier
+
 We analyze the binary logistic regression model on the project data. We start
 considering the standard, non-weighted version of the model, without any
 pre-processing.
@@ -19,7 +21,7 @@ Since we have a large number of samples, regularization seems ineffective, and
 actually degrades actual DCF since the regularized models tend to lose the
 probabilistic interpretation of the scores. To better understand the role of
 regularization, we analyze the results that we would obtain if we had fewer
-training samples. Repeat the prebvious analysis, but keep only 1 out of 50 model
+training samples. Repeat the previous analysis, but keep only 1 out of 50 model
 training samples, e.g. using data matrices `DTR[:, ::50]`, `LTR[::50]` (apply
 the filter only on the model training samples, not on the validation samples,
 i.e., after splitting the dataset in model training and validation sets). What
@@ -44,7 +46,7 @@ do you observe? In this case is regularization effective? How does it affect the
 two metrics?
 
 The non-regularized model is invariant to affine transformations of the data.
-However, once we introduce a regularization term affine trasnformations of the
+However, once we introduce a regularization term affine transformations of the
 data can lead to different results. Analyze the effects of centering
 (optionally, you can also try different strategies, including Z-normalization
 and whitening, as well as PCA) on the model results. You can restrict the

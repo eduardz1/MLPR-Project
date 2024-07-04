@@ -1,4 +1,6 @@
 """
+# Performance analysis of the MVG classifier
+
 Analyze the performance of the MVG classifier and its variants for different
 applications. Start considering five applications, given by (π1, Cf_n, Cf_p):
 
