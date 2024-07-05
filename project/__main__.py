@@ -13,20 +13,58 @@ from project.labs.lab05 import lab05
 from project.labs.lab07 import lab07
 from project.labs.lab08 import lab08
 from project.labs.lab09 import lab09
+from project.labs.lab10 import lab10
+from project.labs.lab11 import lab11
 
 TYPST_PATH = "report/report.typ"
 DATA = "data/trainData.txt"
 
-conf = {
-    "lab02": False,
-    "lab03": False,
-    "lab04": False,
-    "lab05": False,
-    "lab07": False,
-    "lab08": False,
-    "lab09": False,
-    "compile_pdf": False,
-    "quiet": False,
+lab_config = {
+    "lab02": {
+        "enabled": False,
+        "function": lab02,
+        "title": "Analyzing the features",
+    },
+    "lab03": {
+        "enabled": False,
+        "function": lab03,
+        "title": "PCA & LDA",
+    },
+    "lab04": {
+        "enabled": False,
+        "function": lab04,
+        "title": "Probability densities and ML estimates",
+    },
+    "lab05": {
+        "enabled": False,
+        "function": lab05,
+        "title": "Generative models for classification",
+    },
+    "lab07": {
+        "enabled": False,
+        "function": lab07,
+        "title": "Performance analysis of the MVG classifier",
+    },
+    "lab08": {
+        "enabled": False,
+        "function": lab08,
+        "title": "Performance analysis of the Binary Logistic Regression classifier",
+    },
+    "lab09": {
+        "enabled": False,
+        "function": lab09,
+        "title": "Support Vector Machines classification",
+    },
+    "lab10": {
+        "enabled": False,
+        "function": lab10,
+        "title": "Gaussian Mixture Models",
+    },
+    "lab11": {
+        "enabled": False,
+        "function": lab11,
+        "title": "Calibration and Fusion",
+    },
 }
 
 
@@ -60,7 +98,7 @@ def parse_args():
     exclusive_group.add_argument(
         "-l",
         "--labs",
-        choices=[2, 3, 4, 5, 7, 8, 9],
+        choices=[2, 3, 4, 5, 7, 8, 9, 10, 11],
         type=int,
         nargs="+",
         help="run specific project parts by specifying one of more associated lab numbers",
@@ -69,33 +107,16 @@ def parse_args():
     args = parser.parse_args()
 
     if args.all:
-        conf["lab02"] = True
-        conf["lab03"] = True
-        conf["lab04"] = True
-        conf["lab05"] = True
-        conf["lab07"] = True
-        conf["lab08"] = True
-        conf["lab09"] = True
+        for lab_key in lab_config.keys():
+            lab_config[lab_key]["enabled"] = True
     else:
         for lab in args.labs:
-            if lab == 2:
-                conf["lab02"] = True
-            elif lab == 3:
-                conf["lab03"] = True
-            elif lab == 4:
-                conf["lab04"] = True
-            elif lab == 5:
-                conf["lab05"] = True
-            elif lab == 7:
-                conf["lab07"] = True
-            elif lab == 8:
-                conf["lab08"] = True
-            elif lab == 9:
-                conf["lab09"] = True
-    if args.compile_pdf:
-        conf["compile_pdf"] = True
-    if args.quiet:
-        conf["quiet"] = True
+            # Converts 2 to "lab02", 10 to "lab10", etc.
+            lab_key = f"lab{str(lab).zfill(2)}"
+            if lab_key in lab_config:
+                lab_config[lab_key]["enabled"] = True
+
+    return args
 
 
 def main():
@@ -104,56 +125,23 @@ def main():
     # TODO: Enable this once python 3.12 support is added
     # https://github.com/matplotlib/mplcairo/issues/51
     # os.environ["MPLBACKEND"] = "module://mplcairo.base"
-    # os.environ["MPLBACKEND"] = "Agg"
+    os.environ["MPLBACKEND"] = "Agg"
 
-    parse_args()
+    args = parse_args()
 
     def run_labs():
-        if conf["lab02"]:
-            console.log("[bold red]Lab 2 - Analyzing the features [/bold red]")
-            lab02(DATA)
+        for lab_id, lab_info in lab_config.items():
+            if lab_info["enabled"]:
+                console.log(f"{lab_id} - [bold red]{lab_info['title']} [/bold red]")
+                lab_info["function"](DATA)
 
-        if conf["lab03"]:
-            console.log("[bold red]Lab 3 - PCA & LDA [/bold red]")
-            lab03(DATA)
-
-        if conf["lab04"]:
-            console.log(
-                "[bold red]Lab 4 - Probability densities and ML estimates [/bold red]"
-            )
-            lab04(DATA)
-
-        if conf["lab05"]:
-            console.log(
-                "[bold red]Lab 5 - Generative models for classification [/bold red]"
-            )
-            lab05(DATA)
-
-        if conf["lab07"]:
-            console.log(
-                "[bold red]Lab 7 - Performance analysis of the MVG classifier [/bold red]"
-            )
-            lab07(DATA)
-
-        if conf["lab08"]:
-            console.log(
-                "[bold red]Lab 8 - Performance analysis of the Binary Logistic Regression classifier [/bold red]"
-            )
-            lab08(DATA)
-
-        if conf["lab09"]:
-            console.log(
-                "[bold red]Lab 9 - Support Vector Machines classification [/bold red]"
-            )
-            lab09(DATA)
-
-        if conf["compile_pdf"]:
+        if args.compile_pdf:
             status = Status("Compiling the report...")
             status.start()
             typst.compile(TYPST_PATH, output=TYPST_PATH.replace(".typ", ".pdf"))
             status.stop()
 
-    if conf["quiet"]:
+    if args.quiet:
         # Suppress output by redirecting stdout to /dev/null
         with open(os.devnull, "w") as f, contextlib.redirect_stdout(f):
             run_labs()

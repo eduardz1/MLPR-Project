@@ -20,79 +20,62 @@ class SupportVectorMachine:
         C: float,
         svm_type: Literal["linear"] | Literal["kernel"] = "linear",
         K: int = 1,
-        kernelFunc: Callable[[npt.NDArray, npt.NDArray], npt.NDArray] | None = None,
+        eps: float = 1,
+        kernel_func: Callable[[npt.NDArray, npt.NDArray], npt.NDArray] | None = None,
     ):
+        if svm_type == "kernel" and kernel_func is None:
+            raise ValueError("Kernel function must be provided when using kernel SVM")
+
+        ZTR = self.y_train * 2.0 - 1.0  # Convert labels to +1/-1
+
         if svm_type == "linear":
-            return self.__train_dual_SVM_linear(C, K)
+            DTR_EXT = np.vstack([self.X_train, np.ones((1, self.X_train.shape[1])) * K])
+            ker = np.dot(DTR_EXT.T, DTR_EXT)
+        else:
+            ker = kernel_func(self.X_train, self.X_train) + eps  # type: ignore
 
-        return self.__train_dual_SVM_kernel(C, kernelFunc, K)
-
-    def __train_dual_SVM_linear(self, C: float, K: int = 1):
-        ZTR = self.y_train * 2.0 - 1.0  # Convert labels to +1/-1
-        DTR_EXT = np.vstack([self.X_train, np.ones((1, self.X_train.shape[1])) * K])
-
-        H = np.dot(DTR_EXT.T, DTR_EXT) * vcol(ZTR) * vrow(ZTR)
-
-        # Dual objective with gradient
-
-        fopt = partial(self.__function_optimize, H)
-
-        alphaStar, _, _ = opt.fmin_l_bfgs_b(
-            fopt,
-            np.zeros(DTR_EXT.shape[1]),
-            bounds=[(0, C) for i in self.y_train],
-            factr=1.0,
-        )
-
-        # Compute primal solution for extended data matrix
-        w_hat = (vrow(alphaStar) * vrow(ZTR) * DTR_EXT).sum(1)
-
-        # Extract w and b - alternatively, we could construct the extended matrix for the samples to score and use directly v
-        w, b = (
-            w_hat[0 : self.X_train.shape[0]],
-            w_hat[-1] * K,
-        )  # b must be rescaled in case K != 1, since we want to compute w'x + b * K
-
-        primalLoss, dualLoss = (
-            self.__calculate_primal_loss(w_hat, DTR_EXT, ZTR, C),
-            -self.__function_optimize(H, alphaStar)[0],
-        )
-        print(
-            "SVM - C %e - K %e - primal loss %e - dual loss %e - duality gap %e"
-            % (C, K, primalLoss, dualLoss, primalLoss - dualLoss)
-        )
-
-        self.scores = (vrow(w) @ self.X_val + b).ravel()
-
-        return self.scores
-
-    # kernelFunc: function that computes the kernel matrix from two data matrices
-    def __train_dual_SVM_kernel(self, C, kernelFunc, eps=1.0):
-
-        ZTR = self.y_train * 2.0 - 1.0  # Convert labels to +1/-1
-
-        K = kernelFunc(self.X_train, self.X_train) + eps
-        H = vcol(ZTR) * vrow(ZTR) * K
+        H = ker * vcol(ZTR) * vrow(ZTR)
 
         # Dual objective with gradient
         fopt = partial(self.__function_optimize, H)
 
-        alphaStar, _, _ = opt.fmin_l_bfgs_b(
+        alpha_star, *_ = opt.fmin_l_bfgs_b(
             fopt,
             np.zeros(self.X_train.shape[1]),
-            bounds=[(0, C) for i in self.y_train],
+            bounds=[(0, C) for _ in self.y_train],
             factr=1.0,
         )
 
-        print(
-            "SVM (kernel) - C %e - dual loss %e"
-            % (C, -self.__function_optimize(H, alphaStar)[0])
-        )
+        if svm_type == "linear":
+            # Compute primal solution for extended data matrix
+            w_hat = (vrow(alpha_star) * vrow(ZTR) * DTR_EXT).sum(1)
 
-        # Compute the fscore
-        K = kernelFunc(self.X_train, self.X_val) + eps
-        H = vcol(alphaStar) * vcol(ZTR) * K
-        self.scores = H.sum(0)
+            # Extract w and b - alternatively, we could construct the extended matrix for the samples to score and use directly v
+            w, b = (
+                w_hat[0 : self.X_train.shape[0]],
+                w_hat[-1] * K,
+            )  # b must be rescaled in case K != 1, since we want to compute w'x + b * K
+
+            primal_loss, dual_loss = (
+                self.__calculate_primal_loss(w_hat, DTR_EXT, ZTR, C),
+                -self.__function_optimize(H, alpha_star)[0],
+            )
+            print(
+                "SVM - C %e - K %e - primal loss %e - dual loss %e - duality gap %e"
+                % (C, K, primal_loss, dual_loss, primal_loss - dual_loss)
+            )
+
+            self.scores = (vrow(w) @ self.X_val + b).ravel()
+        else:
+            print(
+                "SVM (kernel) - C %e - dual loss %e"
+                % (C, -self.__function_optimize(H, alpha_star)[0])
+            )
+
+            # Compute the fscore
+            ker = kernel_func(self.X_train, self.X_val) + eps  # type: ignore
+            H = vcol(alpha_star) * vcol(ZTR) * ker
+            self.scores = H.sum(0)
 
         return self.scores
 
