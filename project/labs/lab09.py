@@ -98,7 +98,37 @@ def lab09(DATA: str):
             "actDCF": act_dcfs,
         },
         range_c,
-        file_name="lab09_linear",
+        file_name="svm/linear",
+        xscale="log",
+        xlabel="C",
+        ylabel="DCF",
+    )
+
+    # Linear SVM with DCF and MinDCF as C varies with centered data
+
+    act_dcfs = []
+    min_dcfs = []
+    range_c = np.logspace(-5, 0, 11)
+
+    X_train_centered = X_train - X_train.mean(axis=1, keepdims=True)
+    X_val_centered = X_val - X_val.mean(axis=1, keepdims=True)
+
+    svm_centered = SupportVectorMachine(X_train_centered, y_train, X_val_centered)
+
+    for C in range_c:
+        scores = svm_centered.train(C, "linear", K=1)
+
+        min_dcfs.append(dcf(scores, y_val, PRIOR, 1.0, 1.0, "min", True))
+
+        act_dcfs.append(dcf(scores, y_val, PRIOR, 1.0, 1.0, "optimal", True))
+
+    plot(
+        {
+            "minDCF": min_dcfs,
+            "actDCF": act_dcfs,
+        },
+        range_c,
+        file_name="svm/linear_centered",
         xscale="log",
         xlabel="C",
         ylabel="DCF",
@@ -122,7 +152,7 @@ def lab09(DATA: str):
             "actDCF": act_dcfs,
         },
         range_c,
-        file_name="lab09_kernel",
+        file_name="svm/poly_kernel",
         xscale="log",
         xlabel="C",
         ylabel="DCF",
@@ -155,8 +185,32 @@ def lab09(DATA: str):
                 "actDCF": act_dcfs,
             },
             Cs,
-            file_name=f"lab09_kernel_{l}",
+            file_name=f"svm/rbf_kernel_{l}",
             xscale="log",
             xlabel="C",
             ylabel="DCF",
         )
+
+    # Optional: Polynomial Kernel SVM with d = 4, c = 1, ξ = 0
+
+    act_dcfs = []
+    min_dcfs = []
+
+    for C in range_c:
+        scores = svm.train(C, "kernel", K=1, kernel_func=poly_kernel(4, 1))
+
+        min_dcfs.append(dcf(scores, y_val, PRIOR, 1.0, 1.0, "min", True))
+
+        act_dcfs.append(dcf(scores, y_val, PRIOR, 1.0, 1.0, "optimal", True))
+
+    plot(
+        {
+            "minDCF": min_dcfs,
+            "actDCF": act_dcfs,
+        },
+        range_c,
+        file_name="svm/poly_kernel_4",
+        xscale="log",
+        xlabel="C",
+        ylabel="DCF",
+    )
