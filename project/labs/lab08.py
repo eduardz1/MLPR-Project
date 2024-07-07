@@ -74,79 +74,14 @@ score calibration (you can skip the models trained with the reduced dataset, as
 they won’t be needed).
 """
 
-from functools import partial
 from pprint import pprint
 
 import numpy as np
-import scipy.optimize as opt
 
+from project.classifiers.logistic_regression import LogisticRegression
 from project.figures.plots import plot
-from project.funcs.base import load_data, split_db_2to1
+from project.funcs.base import load_data, quadratic_feature_expansion, split_db_2to1
 from project.funcs.dcf import dcf
-from project.funcs.logreg_obj import logreg_obj
-
-
-def quadratic_feature_expansion(X):
-    X = X.T
-
-    # Compute the outer product for each vector with itself using einsum
-    outer_products = np.einsum("ij,ik->ijk", X, X)
-
-    flattened_outer_products = outer_products.reshape(X.shape[0], -1)
-    X_panded = np.concatenate([flattened_outer_products, X], axis=1)
-
-    return X_panded.T
-
-
-def compute_logistic_regression(
-    X_train, y_train, X_val, y_val, lambdas, prior, prior_weighted=False
-):
-    applications = {
-        "λ": [],
-        "J(w*,b*)": [],
-        "Error rate": [],
-        "minDCF": [],
-        "actDCF": [],
-    }
-
-    for l in lambdas:
-        logReg = partial(
-            logreg_obj,
-            approx_grad=True,
-            DTR=X_train,
-            LTR=y_train,
-            l=l,
-            prior=prior if prior_weighted else None,
-        )
-
-        x, f, _ = opt.fmin_l_bfgs_b(
-            logReg,
-            np.zeros(X_train.shape[0] + 1),
-            approx_grad=True,
-        )
-
-        w, b = x[:-1], x[-1]
-
-        S = w @ X_val + b
-        LP = S > 0
-        error_rate = np.mean(LP != y_val)
-
-        if prior_weighted:
-            S_llr = S.ravel() - np.log(prior / (1 - prior))
-        else:
-            pi_emp = np.mean(y_train)  # Fractions of samples of class 1
-            S_llr = S.ravel() - np.log(pi_emp / (1 - pi_emp))
-
-        min_dcf = dcf(S_llr, y_val, prior, 1, 1, "min", normalize=True)
-        act_dcf = dcf(S_llr, y_val, prior, 1, 1, "optimal", normalize=True)
-
-        applications["λ"].append(l)
-        applications["J(w*,b*)"].append(f)
-        applications["Error rate"].append(error_rate)
-        applications["minDCF"].append(min_dcf)
-        applications["actDCF"].append(act_dcf)
-
-    return applications
 
 
 def lab08(DATA: str):
@@ -157,6 +92,37 @@ def lab08(DATA: str):
     lambdas = np.logspace(-4, 2, 13)
 
     PRIOR = 0.1
+
+    def compute_logistic_regression(
+        X_train, y_train, X_val, y_val, lambdas, prior, prior_weighted=False
+    ):
+        applications = {
+            "λ": [],
+            "J(w*,b*)": [],
+            "Error rate": [],
+            "minDCF": [],
+            "actDCF": [],
+        }
+
+        cl = LogisticRegression(X_train, y_train, X_val, y_val)
+
+        for l in lambdas:
+            f = cl.train(l, prior, prior_weighted)
+
+            min_dcf = dcf(
+                cl.log_likelihood_ratio, y_val, prior, 1, 1, "min", normalize=True
+            )
+            act_dcf = dcf(
+                cl.log_likelihood_ratio, y_val, prior, 1, 1, "optimal", normalize=True
+            )
+
+            applications["λ"].append(l)
+            applications["J(w*,b*)"].append(f)
+            applications["Error rate"].append(cl.error_rate)
+            applications["minDCF"].append(min_dcf)
+            applications["actDCF"].append(act_dcf)
+
+        return applications
 
     applications = compute_logistic_regression(
         X_train, y_train, X_val, y_val, lambdas, PRIOR

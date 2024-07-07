@@ -134,6 +134,25 @@ def scatter(X, y, **kwargs):
                 progress.update(task, advance=1)
 
 
+def scatter_3d(x, y, z, **kwargs):
+    plt.ioff()
+    fig = plt.figure(figsize=kwargs.get("figsize", FIG_SIZE))
+
+    ax = fig.add_subplot(111, projection="3d")
+
+    ax.scatter(x, y, z, c=z, cmap="coolwarm", alpha=0.6)
+
+    ax.set_xlabel(kwargs.get("xlabel", "X"))
+    ax.set_ylabel(kwargs.get("ylabel", "Y"))
+
+    ax.set_title(kwargs.get("title", "3D Scatter Plot"))
+
+    plt.tight_layout()
+
+    plt.savefig(f"{IMG_FOLDER}/{kwargs.get('file_name')}.svg")
+    plt.clf()
+
+
 def plot(dict: dict[str, list], range: npt.ArrayLike, **kwargs) -> None:
     plt.ioff()
     plt.figure(figsize=kwargs.get("figsize", FIG_SIZE))
@@ -151,6 +170,7 @@ def plot(dict: dict[str, list], range: npt.ArrayLike, **kwargs) -> None:
     plt.tight_layout()
 
     plt.savefig(f"{IMG_FOLDER}/{kwargs.get('file_name')}.svg")
+    plt.clf()
 
 
 def densities(

@@ -6,7 +6,7 @@ import numpy.typing as npt
 from deprecated import deprecated
 
 from project.funcs.base import corr, cov
-from project.funcs.logpdf import log_pdf
+from project.funcs.log_pdf import log_pdf_gaussian
 from project.funcs.pca import pca
 
 
@@ -160,7 +160,7 @@ class BinaryGaussian:
             # fmt: on
 
             # Store the log likelihoods for each sample of class i
-            self.__S[i, :] = log_pdf(X_val, mu, C)
+            self.__S[i, :] = log_pdf_gaussian(X_val, mu, C)
 
     def predict(self, pi_T=0.5, C_fn=1, C_fp=1) -> npt.ArrayLike:
         """

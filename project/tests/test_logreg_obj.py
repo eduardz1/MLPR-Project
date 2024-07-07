@@ -5,9 +5,9 @@ import numpy as np
 import scipy.optimize as opt
 import sklearn.datasets as datasets
 
+from project.classifiers.logistic_regression import LogisticRegression
 from project.funcs.base import split_db_2to1, vcol
 from project.funcs.dcf import dcf
-from project.funcs.logreg_obj import logreg_obj
 
 
 class LogRegObjTests(unittest.TestCase):
@@ -24,13 +24,12 @@ class LogRegObjTests(unittest.TestCase):
         (DTR, LTR), (DVAL, LVAL) = split_db_2to1(D, L)
 
         logReg = partial(
-            logreg_obj,
+            LogisticRegression.logreg_obj,
             approx_grad=True,
             DTR=DTR,
             LTR=LTR,
             l=1,
             prior=None,
-            quadratic=False,
         )
 
         x, f, _ = opt.fmin_l_bfgs_b(
@@ -59,13 +58,12 @@ class LogRegObjTests(unittest.TestCase):
 
         PRIOR = 0.8
         logReg = partial(
-            logreg_obj,
+            LogisticRegression.logreg_obj,
             approx_grad=True,
             DTR=DTR,
             LTR=LTR,
             l=1e-3,
             prior=PRIOR,
-            quadratic=False,
         )
 
         x, f, _ = opt.fmin_l_bfgs_b(

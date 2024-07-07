@@ -135,3 +135,15 @@ def yield_confusion_matrices(
             TN += 1
 
         yield np.array([[TN, FP], [FN, TP]])
+
+
+def quadratic_feature_expansion(X):
+    X = X.T
+
+    # Compute the outer product for each vector with itself using einsum
+    outer_products = np.einsum("ij,ik->ijk", X, X)
+
+    flattened_outer_products = outer_products.reshape(X.shape[0], -1)
+    X_panded = np.concatenate([flattened_outer_products, X], axis=1)
+
+    return X_panded.T

@@ -26,7 +26,7 @@ from rich.console import Console
 from project.figures.plots import densities
 from project.figures.rich import table
 from project.funcs.base import load_data
-from project.funcs.logpdf import log_pdf
+from project.funcs.log_pdf import log_pdf_gaussian
 
 
 def lab04(DATA: str):
@@ -40,7 +40,7 @@ def lab04(DATA: str):
     # If we want to analyze the data ina uni-variate way Covariance(X, X) = Var(X)
     vars = np.array([np.var(X[y == c], axis=0) for c in classes])
 
-    densities(X, y, means, vars, log_pdf)
+    densities(X, y, means, vars, log_pdf_gaussian)
 
     table(
         Console(),
