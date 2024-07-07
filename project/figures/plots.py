@@ -40,7 +40,7 @@ def _hist(args):
 
     plt.tight_layout()
     plt.savefig(f"{IMG_FOLDER}/hist/{kwargs.get('file_name')}_{i}.svg")
-    plt.clf()
+    plt.close()
 
 
 def hist(X, y, **kwargs):
@@ -99,7 +99,7 @@ def _scatter(args):
         transparent=True,
         dpi=300,
     )
-    plt.clf()
+    plt.close()
 
     # Needed to better visualize difference between overlapping points, it's
     # faster to parse SVG files rather than using the .tostring() method on a
@@ -150,7 +150,7 @@ def scatter_3d(x, y, z, **kwargs):
     plt.tight_layout()
 
     plt.savefig(f"{IMG_FOLDER}/{kwargs.get('file_name')}.svg")
-    plt.clf()
+    plt.close()
 
 
 def plot(dict: dict[str, list], range: npt.ArrayLike, **kwargs) -> None:
@@ -170,7 +170,7 @@ def plot(dict: dict[str, list], range: npt.ArrayLike, **kwargs) -> None:
     plt.tight_layout()
 
     plt.savefig(f"{IMG_FOLDER}/{kwargs.get('file_name')}.svg")
-    plt.clf()
+    plt.close()
 
 
 def densities(
@@ -226,7 +226,7 @@ def _densities(args):
 
     plt.tight_layout()
     plt.savefig(f"{IMG_FOLDER}/densities/density_{i}_{j}.svg")
-    plt.clf()
+    plt.close()
 
 
 def blend_svgs(svg1, svg2, path):
@@ -268,4 +268,4 @@ def heatmap(X: npt.NDArray, cmap: str, file_name: str) -> None:
 
     plt.tight_layout()
     plt.savefig(f"{IMG_FOLDER}/heatmaps/{file_name}.svg")
-    plt.clf()
+    plt.close()
