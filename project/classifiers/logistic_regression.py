@@ -17,6 +17,21 @@ class LogisticRegression:
     y_val: npt.NDArray
 
     def train(self, l: float, prior: float, prior_weighted: bool = False):
+        """
+        Train the logistic regression classifier using the training data and the
+        specified hyperparameters.
+
+        Args:
+            l (float): the regularization hyperparameter
+            prior (float): the prior probability of the positive class
+            prior_weighted (bool, optional): if True, the prior-weighted logistic
+                regression objective is used, otherwise the standard logistic
+                regression objective is used. Defaults to False.
+
+        Returns:
+            float: the value of the objective function at the optimal point
+        """
+
         self.__prior_weighted = prior_weighted
         self.__prior = prior
 
@@ -43,6 +58,10 @@ class LogisticRegression:
 
     @property
     def log_likelihood_ratio(self) -> npt.NDArray:
+        """
+        Log likelihood ratio of the classifier.
+        """
+
         if self.__prior_weighted:
             return self.__S.ravel() - np.log(self.__prior / (1 - self.__prior))
         else:
@@ -51,6 +70,10 @@ class LogisticRegression:
 
     @property
     def error_rate(self) -> float:
+        """
+        Error rate measure of the classifier.
+        """
+
         LP = self.__S > 0
         return np.mean(LP != self.y_val)
 

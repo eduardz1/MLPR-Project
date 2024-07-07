@@ -23,6 +23,27 @@ class SupportVectorMachine:
         eps: float = 1,
         kernel_func: Callable[[npt.NDArray, npt.NDArray], npt.NDArray] | None = None,
     ):
+        """
+        Train the support vector machine classifier using the training data and the
+        specified hyperparameters.
+
+        Args:
+            C (float): the regularization hyperparameter
+            svm_type (Literal[linear] | Literal[kernel], optional): the type of
+                SVM to use. Defaults to "linear".
+            K (int, optional): the kernel parameter. Defaults to 1.
+            eps (float, optional): the epsilon parameter. Defaults to 1.
+            kernel_func (
+                Callable[[npt.NDArray, npt.NDArray], npt.NDArray] | None, optional
+                ): the kernel function to use. Defaults to None.
+
+        Raises:
+            ValueError: Kernel function must be provided when using kernel SVM
+
+        Returns:
+            npt.NDArray: the scores of the classifier on the validation data
+        """
+
         if svm_type == "kernel" and kernel_func is None:
             raise ValueError("Kernel function must be provided when using kernel SVM")
 
@@ -56,26 +77,17 @@ class SupportVectorMachine:
                 w_hat[-1] * K,
             )  # b must be rescaled in case K != 1, since we want to compute w'x + b * K
 
-            primal_loss, dual_loss = (
-                self.__calculate_primal_loss(w_hat, DTR_EXT, ZTR, C),
-                -self.__function_optimize(H, alpha_star)[0],
-            )
-            print(
-                "SVM - C %e - K %e - primal loss %e - dual loss %e - duality gap %e"
-                % (C, K, primal_loss, dual_loss, primal_loss - dual_loss)
-            )
+            self.primal_loss = self.__calculate_primal_loss(w_hat, DTR_EXT, ZTR, C)
+            self.dual_loss = -self.__function_optimize(H, alpha_star)[0]
+            self.duality_gap = self.primal_loss - self.dual_loss
 
             self.scores = (vrow(w) @ self.X_val + b).ravel()
         else:
-            print(
-                "SVM (kernel) - C %e - dual loss %e"
-                % (C, -self.__function_optimize(H, alpha_star)[0])
-            )
+            self.dual_loss = -self.__function_optimize(H, alpha_star)[0]
 
-            # Compute the fscore
             ker = kernel_func(self.X_train, self.X_val) + eps  # type: ignore
             H = vcol(alpha_star) * vcol(ZTR) * ker
-            self.scores = H.sum(0)
+            self.scores = H.sum(0)  # compute the fscore
 
         return self.scores
 
