@@ -7,7 +7,7 @@ from numba import njit
 from project.funcs.base import confusion_matrix, yield_confusion_matrices
 
 
-@njit
+@njit(cache=True)
 def optimal_bayes_threshold(pi: float, C_fn: float, C_fp: float) -> float:
     return -np.log((pi * C_fn) / ((1 - pi) * C_fp))
 
@@ -16,7 +16,7 @@ def effective_prior(pi_T: float, C_fn: float, C_fp: float) -> float:
     return (pi_T * C_fn) / (pi_T * C_fn + (1 - pi_T) * C_fp)
 
 
-@njit
+@njit(cache=True, parallel=True)
 def dcf(
     llr: npt.NDArray,
     y_val: npt.NDArray,
@@ -24,7 +24,7 @@ def dcf(
     Cf_n: float,
     Cf_p: float,
     strategy: Literal["optimal"] | Literal["min"] | Literal["manual"],
-    normalize=False,
+    normalize=True,
     threshold=0.0,
 ) -> float:
     """
@@ -44,7 +44,7 @@ def dcf(
             Use "optimal" to compute the optimal threshold, "min" to compute the
             minimum DCF value, and "manual" to use the given threshold.
         normalize (bool, optional): Whether to normalize the DCF value.
-            Defaults to False.
+            Defaults to True.
         threshold (float, optional): The threshold to use if strategy is "manual".
             Does not have any effect if strategy is not "manual". Defaults to 0.0.
 
@@ -87,3 +87,43 @@ def dcf(
             if normalize
             else 1  # If normalization is not required, return the raw DCF value
         )
+
+
+@njit(cache=True, parallel=True)
+def bayes_error_plot(
+    scores: npt.NDArray,
+    labels: npt.NDArray,
+    left: float = -4,
+    right: float = 4,
+    num_points: int = 100,
+) -> tuple[npt.ArrayLike, list, list]:
+    """
+    Utility function to compute the actual and minimum DCF values for a range
+    of effective priors.
+
+    Args:
+        scores (npt.NDArray): The log-likelihood ratio values.
+        labels (npt.NDArray): The true labels.
+        left (float, optional): The left bound of the effective prior range.
+            Defaults to -4.
+        right (float, optional): The right bound of the effective prior range.
+            Defaults to 4.
+        num_points (int, optional): The number of points to use in the range.
+            Defaults to 100.
+
+    Returns:
+        Tuple[npt.ArrayLike, list, list]: The effective priors,
+            the actual DCF values, and the minimum DCF values.
+    """
+
+    effective_prior_log_odds = np.linspace(left, right, num_points)
+    effective_priors = 1.0 / (1.0 + np.exp(-effective_prior_log_odds))
+
+    act_dcf = []
+    min_dcf = []
+
+    for effective_prior in effective_priors:
+        act_dcf.append(dcf(scores, labels, effective_prior, 1, 1, "optimal"))
+        min_dcf.append(dcf(scores, labels, effective_prior, 1, 1, "min"))
+
+    return effective_prior_log_odds, act_dcf, min_dcf

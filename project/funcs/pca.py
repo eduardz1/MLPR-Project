@@ -5,7 +5,7 @@ from numba import njit
 from project.funcs.base import cov, vrow
 
 
-@njit
+@njit(cache=True)
 def __flip(arr: npt.NDArray) -> npt.NDArray:
     """
     Multiplies the columns of the input array by the sign of the maximum absolute
@@ -33,7 +33,7 @@ def __flip(arr: npt.NDArray) -> npt.NDArray:
     return arr * vrow(signs)
 
 
-@njit
+@njit(cache=True)
 def pca(X: npt.NDArray, m: int | None = None) -> tuple[npt.NDArray, npt.NDArray]:
     """
     Performs Principal Component Analysis on the data matrix X, keeping the

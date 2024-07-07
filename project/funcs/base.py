@@ -5,12 +5,12 @@ import numpy.typing as npt
 from numba import njit
 
 
-@njit
+@njit(cache=True)
 def vcol(vec: npt.NDArray) -> npt.NDArray:
     return vec.reshape(-1, 1)
 
 
-@njit
+@njit(cache=True)
 def vrow(vec: npt.NDArray) -> npt.NDArray:
     return vec.reshape(1, -1)
 
@@ -30,7 +30,7 @@ def load_data(path: str) -> tuple[npt.NDArray, npt.NDArray]:
     return X, y
 
 
-@njit
+@njit(cache=True)
 def mean(x, axis=None):
     if axis is None:
         return np.sum(x, axis) / np.prod(x.shape)
@@ -38,7 +38,7 @@ def mean(x, axis=None):
         return np.sum(x, axis) / x.shape[axis]
 
 
-@njit
+@njit(cache=True)
 def cov(X: npt.NDArray) -> npt.NDArray:
     """Compute the covariance matrix of the given data. Centers the data first.
 
@@ -65,6 +65,27 @@ def corr(X: npt.NDArray) -> npt.NDArray:
     return (C := cov(X)) / (vcol(C.diagonal() ** 0.5) * vrow(C.diagonal() ** 0.5))
 
 
+@njit(cache=True)
+def atleast_1d(x):
+    """
+    Workaround for the numba issue with `np.atleast_1d`
+    https://github.com/numba/numba/issues/4202
+    """
+    zero = np.zeros((1,), dtype=np.bool_)
+    return x + zero
+
+
+@njit(cache=True)
+def atleast_2d(x):
+    """
+    Workaround for the numba issue with `np.atleast_2d`
+    https://github.com/numba/numba/issues/4202
+    """
+    zero = np.zeros((1, 1), dtype=np.bool_)
+    return x + zero
+
+
+@njit(cache=True)
 def split_db_2to1(
     D: npt.NDArray, L: npt.NDArray, seed=0
 ) -> tuple[tuple[npt.NDArray, npt.NDArray], tuple[npt.NDArray, npt.NDArray]]:
@@ -82,7 +103,7 @@ def split_db_2to1(
     return (DTR, LTR), (DTE, LTE)
 
 
-@njit
+@njit(cache=True)
 def confusion_matrix(y_true: npt.NDArray, y_pred: npt.NDArray) -> npt.NDArray[np.int32]:
     """Compute the confusion matrix for the given true and predicted labels
 

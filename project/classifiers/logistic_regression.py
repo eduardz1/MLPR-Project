@@ -16,7 +16,13 @@ class LogisticRegression:
     X_val: npt.NDArray
     y_val: npt.NDArray
 
-    def train(self, l: float, prior: float, prior_weighted: bool = False):
+    def train(
+        self,
+        l: float,
+        prior: float,
+        prior_weighted: bool = False,
+        approx_grad: bool = True,
+    ):
         """
         Train the logistic regression classifier using the training data and the
         specified hyperparameters.
@@ -27,6 +33,8 @@ class LogisticRegression:
             prior_weighted (bool, optional): if True, the prior-weighted logistic
                 regression objective is used, otherwise the standard logistic
                 regression objective is used. Defaults to False.
+            approx_grad (bool, optional): if True, the gradient is approximated,
+                otherwise the exact gradient is used. Defaults to True.
 
         Returns:
             float: the value of the objective function at the optimal point
@@ -36,8 +44,8 @@ class LogisticRegression:
         self.__prior = prior
 
         log_reg = partial(
-            self.logreg_obj,
-            approx_grad=True,
+            self.objective,
+            approx_grad=approx_grad,
             DTR=self.X_train,
             LTR=self.y_train,
             l=l,
@@ -47,7 +55,7 @@ class LogisticRegression:
         x, f, _ = opt.fmin_l_bfgs_b(
             log_reg,
             np.zeros(self.X_train.shape[0] + 1),
-            approx_grad=True,
+            approx_grad=approx_grad,
         )
 
         w, b = x[:-1], x[-1]
@@ -78,7 +86,7 @@ class LogisticRegression:
         return np.mean(LP != self.y_val)
 
     @staticmethod
-    def logreg_obj(
+    def objective(
         v: npt.NDArray[np.float64],
         *,
         prior: float | None,
@@ -107,7 +115,7 @@ class LogisticRegression:
         """
         # This function wraps the real implementation to manage etheroegeneous
         # return types in the numba.jit compiled function
-        result = LogisticRegression.__logreg_obj(
+        result = LogisticRegression.__objective(
             v,
             prior=prior,
             approx_grad=approx_grad,
@@ -122,8 +130,8 @@ class LogisticRegression:
         return result  # type: ignore
 
     @staticmethod
-    @njit
-    def __logreg_obj(
+    @njit(cache=True)
+    def __objective(
         v: npt.NDArray[np.float64],
         *,
         prior: float | None,

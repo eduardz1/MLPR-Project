@@ -24,7 +24,7 @@ class LogRegObjTests(unittest.TestCase):
         (DTR, LTR), (DVAL, LVAL) = split_db_2to1(D, L)
 
         logReg = partial(
-            LogisticRegression.logreg_obj,
+            LogisticRegression.objective,
             approx_grad=True,
             DTR=DTR,
             LTR=LTR,
@@ -58,7 +58,7 @@ class LogRegObjTests(unittest.TestCase):
 
         PRIOR = 0.8
         logReg = partial(
-            LogisticRegression.logreg_obj,
+            LogisticRegression.objective,
             approx_grad=True,
             DTR=DTR,
             LTR=LTR,

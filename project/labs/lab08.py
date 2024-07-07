@@ -74,17 +74,21 @@ score calibration (you can skip the models trained with the reduced dataset, as
 they won’t be needed).
 """
 
-from pprint import pprint
+import json
 
 import numpy as np
+from rich.console import Console
 
 from project.classifiers.logistic_regression import LogisticRegression
 from project.figures.plots import plot
+from project.figures.rich import table
 from project.funcs.base import load_data, quadratic_feature_expansion, split_db_2to1
 from project.funcs.dcf import dcf
 
 
 def lab08(DATA: str):
+    console = Console()
+
     X, y = load_data(DATA)
 
     (X_train, y_train), (X_val, y_val) = split_db_2to1(X.T, y)
@@ -93,8 +97,26 @@ def lab08(DATA: str):
 
     PRIOR = 0.1
 
+    best_log_reg_config = {
+        "lambda": 0,
+        "prior_weighted": False,
+        "quadratic": False,
+        "centered": False,
+        "min_dcf": np.inf,
+        "act_dcf": np.inf,
+        "scores": None,
+    }
+
     def compute_logistic_regression(
-        X_train, y_train, X_val, y_val, lambdas, prior, prior_weighted=False
+        X_train,
+        y_train,
+        X_val,
+        y_val,
+        lambdas,
+        prior,
+        prior_weighted=False,
+        quadratic=False,
+        centered=False,
     ):
         applications = {
             "λ": [],
@@ -104,17 +126,21 @@ def lab08(DATA: str):
             "actDCF": [],
         }
 
+        if quadratic:
+            X_train = quadratic_feature_expansion(X_train)
+            X_val = quadratic_feature_expansion(X_val)
+
+        if centered:
+            X_train = X_train - X_train.mean(axis=1, keepdims=True)
+            X_val = X_val - X_val.mean(axis=1, keepdims=True)
+
         cl = LogisticRegression(X_train, y_train, X_val, y_val)
 
         for l in lambdas:
             f = cl.train(l, prior, prior_weighted)
 
-            min_dcf = dcf(
-                cl.log_likelihood_ratio, y_val, prior, 1, 1, "min", normalize=True
-            )
-            act_dcf = dcf(
-                cl.log_likelihood_ratio, y_val, prior, 1, 1, "optimal", normalize=True
-            )
+            min_dcf = dcf(cl.log_likelihood_ratio, y_val, prior, 1, 1, "min")
+            act_dcf = dcf(cl.log_likelihood_ratio, y_val, prior, 1, 1, "optimal")
 
             applications["λ"].append(l)
             applications["J(w*,b*)"].append(f)
@@ -122,13 +148,29 @@ def lab08(DATA: str):
             applications["minDCF"].append(min_dcf)
             applications["actDCF"].append(act_dcf)
 
+            if min_dcf < best_log_reg_config["min_dcf"]:
+                best_log_reg_config.update(
+                    {
+                        "lambda": l,
+                        "prior_weighted": prior_weighted,
+                        "quadratic": quadratic,
+                        "centered": centered,
+                        "min_dcf": min_dcf,
+                        "act_dcf": act_dcf,
+                        "scores": cl.log_likelihood_ratio.tolist(),
+                    }
+                )
+
         return applications
+
+    # Compute the standard logistic regression model
 
     applications = compute_logistic_regression(
         X_train, y_train, X_val, y_val, lambdas, PRIOR
     )
 
-    pprint(applications)
+    table(console, "Logistic regression", applications)
+
     plot(
         {
             "minDCF": applications["minDCF"],
@@ -148,7 +190,7 @@ def lab08(DATA: str):
         X_train_s, y_train_s, X_val, y_val, lambdas, PRIOR
     )
 
-    pprint(applications)
+    table(console, "Logistic regression (1 in 50)", applications)
 
     plot(
         {
@@ -167,7 +209,7 @@ def lab08(DATA: str):
         X_train, y_train, X_val, y_val, lambdas, PRIOR, prior_weighted=True
     )
 
-    pprint(applications)
+    table(console, "Prior-weighted logistic regression", applications)
 
     plot(
         {
@@ -182,14 +224,12 @@ def lab08(DATA: str):
     )
 
     # Compute the quadratic logistic regression model
-    X_train_expanded = quadratic_feature_expansion(X_train)
-    X_val_expanded = quadratic_feature_expansion(X_val)
 
     applications = compute_logistic_regression(
-        X_train_expanded, y_train, X_val_expanded, y_val, lambdas, PRIOR
+        X_train, y_train, X_val, y_val, lambdas, PRIOR, quadratic=True
     )
 
-    pprint(applications)
+    table(console, "Quadratic logistic regression", applications)
 
     plot(
         {
@@ -203,15 +243,39 @@ def lab08(DATA: str):
         ylabel="DCF",
     )
 
-    # Centering the data and repeat the analysis
-    X_train_centered = X_train - X_train.mean(axis=1, keepdims=True)
-    X_val_centered = X_val - X_train.mean(axis=1, keepdims=True)
-
+    # Quadratic feature expanded and prior weighted
     applications = compute_logistic_regression(
-        X_train_centered, y_train, X_val_centered, y_val, lambdas, PRIOR
+        X_train,
+        y_train,
+        X_val,
+        y_val,
+        lambdas,
+        PRIOR,
+        prior_weighted=True,
+        quadratic=True,
     )
 
-    pprint(applications)
+    table(console, "Quadratic logistic regression (prior weighted)", applications)
+
+    plot(
+        {
+            "minDCF": applications["minDCF"],
+            "actDCF": applications["actDCF"],
+        },
+        applications["λ"],
+        file_name="lambda_vs_dcf_quadratic_prior",
+        xscale="log",
+        xlabel="λ",
+        ylabel="DCF",
+    )
+
+    # Centering the data and repeat the analysis
+
+    applications = compute_logistic_regression(
+        X_train, y_train, X_val, y_val, lambdas, PRIOR, centered=True
+    )
+
+    table(console, "Centered logistic regression", applications)
 
     plot(
         {
@@ -224,3 +288,8 @@ def lab08(DATA: str):
         xlabel="λ",
         ylabel="DCF",
     )
+
+    table(console, "Best logistic regression setup", best_log_reg_config)
+
+    with open("configs/best_log_reg_config.json", "w") as f:
+        json.dump(best_log_reg_config, f)

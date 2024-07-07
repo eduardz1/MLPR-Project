@@ -47,16 +47,18 @@ Are models well-calibrated over the considered range?
 """
 
 import numpy as np
+from rich.console import Console
 
 from project.classifiers.binary_gaussian import BinaryGaussian
 from project.figures.plots import plot
+from project.figures.rich import table
 from project.funcs.base import load_data, split_db_2to1
-from project.funcs.dcf import dcf
+from project.funcs.dcf import bayes_error_plot, dcf
 from project.funcs.dcf import effective_prior as effective_prior
-from project.funcs.dcf import optimal_bayes_threshold
 
 
 def lab07(DATA: str):
+    console = Console()
     X, y = load_data(DATA)
 
     (X_train, y_train), (X_val, y_val) = split_db_2to1(X.T, y)
@@ -75,11 +77,12 @@ def lab07(DATA: str):
         C_fn = applications["C_fn"][i]
         C_fp = applications["C_fp"][i]
 
-        print(f"Application {i + 1}")
-        print(f"π_T: {pi_T}, C_fn: {C_fn}, C_fp: {C_fp}")
         e = effective_prior(pi_T, C_fn, C_fp)
         effective_priors.append(e)
-        print(f"Effective prior: {e}")
+
+        console.print(
+            f"Application {i+1} ({{'π_T': {pi_T}, 'C_fn': {C_fn}, 'C_fp': {C_fp}}}) - Effective prior: {e}"
+        )
 
     effective_priors = np.unique(effective_priors)
 
@@ -93,90 +96,38 @@ def lab07(DATA: str):
         "naive": (np.inf, 0),
     }
 
+    # Analyze the Multivariate Gaussian Classifier
+
     cl.fit(classifier="multivariate")
-    print("Multivariate Gaussian")
+
     for pi in effective_priors:
-        t = optimal_bayes_threshold(pi, 1, 1)
-        print(f"Optimal threshold for effective prior {pi}: {t}")
-        d = dcf(
-            cl.log_likelihood_ratio, y_val, pi, 1, 1, normalize=True, strategy="optimal"
-        )
-        print(f"DCF: {d}")
+        d = dcf(cl.log_likelihood_ratio, y_val, pi, 1, 1, strategy="optimal")
+        min_dcf = dcf(cl.log_likelihood_ratio, y_val, pi, 1, 1, strategy="min")
 
-        min_dcf = dcf(
-            cl.log_likelihood_ratio, y_val, pi, 1, 1, normalize=True, strategy="min"
-        )
-        print(f"Minimum DCF: {min_dcf}")
-        print()
-
-    print("Multivariate Gaussian with PCA")
     for m in range(1, 7):
         cl.fit(classifier="multivariate", pca_dimensions=m)
-        print(f"m = {m}")
         for pi in effective_priors:
-            t = optimal_bayes_threshold(pi, 1, 1)
-            print()
-            print(f"Optimal threshold for effective prior {pi}: {t}")
+            d = dcf(cl.log_likelihood_ratio, y_val, pi, 1, 1, strategy="optimal")
+            min_dcf = dcf(cl.log_likelihood_ratio, y_val, pi, 1, 1, strategy="min")
 
-            d = dcf(
-                cl.log_likelihood_ratio,
-                y_val,
-                pi,
-                1,
-                1,
-                normalize=True,
-                strategy="optimal",
-            )
-            print(f"DCF: {d}")
-
-            min_dcf = dcf(
-                cl.log_likelihood_ratio, y_val, pi, 1, 1, normalize=True, strategy="min"
-            )
             if min_dcf < best_setups[pi][0]:
                 best_setups[pi] = (min_dcf, "multivariate", m)
 
             if pi == 0.1 and d < best_pca_01_setups["multivariate"][0]:
                 best_pca_01_setups["multivariate"] = (min_dcf, m)
-            print(f"Minimum DCF: {min_dcf}")
-            print()
+
+    # Analyze the Tied Gaussian Classifier
 
     cl.fit(classifier="tied")
-    print("Tied Gaussian")
+
     for pi in effective_priors:
-        t = optimal_bayes_threshold(pi, 1, 1)
-        print()
-        print(f"Optimal threshold for effective prior {pi}: {t}")
+        d = dcf(cl.log_likelihood_ratio, y_val, pi, 1, 1, strategy="optimal")
+        min_dcf = dcf(cl.log_likelihood_ratio, y_val, pi, 1, 1, strategy="min")
 
-        d = dcf(
-            cl.log_likelihood_ratio, y_val, pi, 1, 1, normalize=True, strategy="optimal"
-        )
-        print(f"DCF: {d}")
-
-        min_dcf = dcf(
-            cl.log_likelihood_ratio, y_val, pi, 1, 1, normalize=True, strategy="min"
-        )
-        print(f"Minimum DCF: {min_dcf}")
-        print()
-
-    print("Tied Gaussian with PCA")
     for m in range(1, 7):
         cl.fit(classifier="tied", pca_dimensions=m)
-        print(f"m = {m}")
         for pi in effective_priors:
-            t = optimal_bayes_threshold(pi, 1, 1)
-            print()
-            print(f"Optimal threshold for effective prior {pi}: {t}")
-
-            d = dcf(
-                cl.log_likelihood_ratio,
-                y_val,
-                pi,
-                1,
-                1,
-                normalize=True,
-                strategy="optimal",
-            )
-            print(f"DCF: {d}")
+            d = dcf(cl.log_likelihood_ratio, y_val, pi, 1, 1, strategy="optimal")
 
             if d < best_setups[pi][0]:
                 best_setups[pi] = (d, "tied", m)
@@ -184,49 +135,20 @@ def lab07(DATA: str):
             if pi == 0.1 and d < best_pca_01_setups["tied"][0]:
                 best_pca_01_setups["tied"] = (d, m)
 
-            min_dcf = dcf(
-                cl.log_likelihood_ratio, y_val, pi, 1, 1, normalize=True, strategy="min"
-            )
-            print(f"Minimum DCF: {min_dcf}")
-            print()
+            min_dcf = dcf(cl.log_likelihood_ratio, y_val, pi, 1, 1, strategy="min")
+
+    # Analyze the Naive Gaussian Classifier
 
     cl.fit(classifier="naive")
-    print("Naive Gaussian")
+
     for pi in effective_priors:
-        t = optimal_bayes_threshold(pi, 1, 1)
-        print()
-        print(f"Optimal threshold for effective prior {pi}: {t}")
+        d = dcf(cl.log_likelihood_ratio, y_val, pi, 1, 1, strategy="optimal")
+        min_dcf = dcf(cl.log_likelihood_ratio, y_val, pi, 1, 1, strategy="min")
 
-        d = dcf(
-            cl.log_likelihood_ratio, y_val, pi, 1, 1, normalize=True, strategy="optimal"
-        )
-        print(f"DCF: {d}")
-
-        min_dcf = dcf(
-            cl.log_likelihood_ratio, y_val, pi, 1, 1, normalize=True, strategy="min"
-        )
-        print(f"Minimum DCF: {min_dcf}")
-        print()
-
-    print("Naive Gaussian with PCA")
     for m in range(1, 7):
         cl.fit(classifier="naive", pca_dimensions=m)
-        print(f"m = {m}")
         for pi in effective_priors:
-            t = optimal_bayes_threshold(pi, 1, 1)
-            print()
-            print(f"Optimal threshold for effective prior {pi}: {t}")
-
-            d = dcf(
-                cl.log_likelihood_ratio,
-                y_val,
-                pi,
-                1,
-                1,
-                normalize=True,
-                strategy="optimal",
-            )
-            print(f"DCF: {d}")
+            d = dcf(cl.log_likelihood_ratio, y_val, pi, 1, 1, strategy="optimal")
 
             if d < best_setups[pi][0]:
                 best_setups[pi] = (d, "naive", m)
@@ -234,47 +156,40 @@ def lab07(DATA: str):
             if pi == 0.1 and d < best_pca_01_setups["naive"][0]:
                 best_pca_01_setups["naive"] = (d, m)
 
-            min_dcf = dcf(
-                cl.log_likelihood_ratio, y_val, pi, 1, 1, normalize=True, strategy="min"
-            )
-            print(f"Minimum DCF: {min_dcf}")
-            print()
+            min_dcf = dcf(cl.log_likelihood_ratio, y_val, pi, 1, 1, strategy="min")
 
-    print("Best setups")
-    print(best_setups)
+    table(
+        console,
+        "Best Setups",
+        {
+            "Effective Prior": [k for k in best_setups],
+            "Model": [v[1] for v in best_setups.values()],
+            "PCA Dimensions": [v[2] for v in best_setups.values()],
+            "Minimum DCF": [v[0] for v in best_setups.values()],
+        },
+    )
 
-    print("Best PCA setups for 0.1 effective prior")
-    print(best_pca_01_setups)
+    table(
+        console,
+        "Best PCA Setups for 0.1 Effective Prior",
+        {
+            "Model": [k for k in best_pca_01_setups],
+            "PCA Dimensions": [v[1] for v in best_pca_01_setups.values()],
+            "Minimum DCF": [v[0] for v in best_pca_01_setups.values()],
+        },
+    )
 
     for model in ["multivariate", "tied", "naive"]:
         cl.fit(classifier=model, pca_dimensions=best_pca_01_setups[model][1])  # type: ignore
-        effPriorLogOdds = np.linspace(-4, 4, 100)
-        pis = [1 / (1 + np.exp(-x)) for x in effPriorLogOdds]
-        dcfs = [
-            dcf(
-                cl.log_likelihood_ratio,
-                y_val,
-                pi,
-                1,
-                1,
-                normalize=True,
-                strategy="optimal",
-            )
-            for pi in pis
-        ]
-        min_dcfs = [
-            dcf(
-                cl.log_likelihood_ratio, y_val, pi, 1, 1, normalize=True, strategy="min"
-            )
-            for pi in pis
-        ]
+
+        log_odds, act_dcf, min_dcf = bayes_error_plot(cl.log_likelihood_ratio, y_val)
 
         plot(
             {
-                "DCF": dcfs,
-                "Min DCF": min_dcfs,
+                "DCF": act_dcf,
+                "Min DCF": min_dcf,
             },
-            effPriorLogOdds,
+            log_odds,
             file_name=f"{model}_prior_log_odds",
             xlabel="Effective prior log odds",
             ylabel="DCF",

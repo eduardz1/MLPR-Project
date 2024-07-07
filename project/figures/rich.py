@@ -11,11 +11,14 @@ def table(
     title: str,
     dictionary: dict[str, list],
     llr: Optional[ArrayLike] = None,
+    render: bool = True,
 ):
     table = Table(title=title, box=box.ROUNDED)
 
     keys = np.array(list(dictionary.keys()))
-    values = np.array(list(dictionary.values()))
+
+    # Make sure all values are arrays
+    values = [np.atleast_1d(value) for value in dictionary.values()]
 
     for key in keys:
         table.add_column(key, justify="center")
@@ -24,7 +27,10 @@ def table(
         row = [f"{value[i]}" for value in values]
         table.add_row(*row)
 
-    console.print(table, new_line_start=True)
+    if render:
+        console.print(table, new_line_start=True)
 
     if llr is not None:
         console.print(f"Log-likelihood ratio: {llr}")
+
+    return table

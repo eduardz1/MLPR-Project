@@ -3,8 +3,10 @@ import numpy.typing as npt
 import scipy.special as sp
 from numba import njit
 
+from project.funcs.base import atleast_1d, atleast_2d
 
-@njit
+
+@njit(cache=True)
 def _check_params(X: npt.NDArray, mu: npt.NDArray, C: npt.NDArray) -> None:
     # fmt: off
     assert len(X.shape) == 2, f"X must be a 2D array, got {len(X.shape)}"
@@ -15,21 +17,21 @@ def _check_params(X: npt.NDArray, mu: npt.NDArray, C: npt.NDArray) -> None:
     # fmt: on
 
 
-@njit
+@njit(cache=True)
 def log_pdf_gaussian(X: npt.NDArray, mu: npt.NDArray, C: npt.NDArray) -> npt.NDArray:
     """Calculates the logarithm of the multivariate gaussian density function
 
     Args:
         X (NDArray): [M x N] data matrix
-        mu (ArrayLike): [M x 1] mean vector
+        mu (NDArray): [M x 1] mean vector
         C (NDArray): [M x M] covariance matrix
 
     Returns:
         NDArray: [N x 1] logarithm of the multivariate gaussian density function
     """
-    X = np.atleast_2d(X)
-    mu = np.atleast_1d(mu)
-    C = np.atleast_2d(C)
+    X = atleast_2d(X)
+    mu = atleast_1d(mu)
+    C = atleast_2d(C)
 
     _check_params(X, mu, C)
 

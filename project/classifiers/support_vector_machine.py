@@ -5,6 +5,7 @@ from typing import Callable, Literal
 import numpy as np
 import numpy.typing as npt
 import scipy.optimize as opt
+from numba import njit
 
 from project.funcs.base import vcol, vrow
 
@@ -22,7 +23,7 @@ class SupportVectorMachine:
         K: int = 1,
         eps: float = 1,
         kernel_func: Callable[[npt.NDArray, npt.NDArray], npt.NDArray] | None = None,
-    ):
+    ) -> npt.NDArray:
         """
         Train the support vector machine classifier using the training data and the
         specified hyperparameters.
@@ -64,7 +65,6 @@ class SupportVectorMachine:
             fopt,
             np.zeros(self.X_train.shape[1]),
             bounds=[(0, C) for _ in self.y_train],
-            factr=1.0,
         )
 
         if svm_type == "linear":
@@ -91,12 +91,16 @@ class SupportVectorMachine:
 
         return self.scores
 
-    def __function_optimize(self, H, alpha):
+    @staticmethod
+    @njit(cache=True)
+    def __function_optimize(H, alpha):
         Ha = H @ vcol(alpha)
         loss = 0.5 * (vrow(alpha) @ Ha).ravel() - alpha.sum()
         grad = Ha.ravel() - np.ones(alpha.size)
         return loss, grad
 
-    def __calculate_primal_loss(self, w_hat, DTR_EXT, ZTR, C):
+    @staticmethod
+    @njit(cache=True)
+    def __calculate_primal_loss(w_hat, DTR_EXT, ZTR, C):
         S = (vrow(w_hat) @ DTR_EXT).ravel()
         return 0.5 * np.linalg.norm(w_hat) ** 2 + C * np.maximum(0, 1 - ZTR * S).sum()

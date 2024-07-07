@@ -33,16 +33,22 @@ significant miscalibration? Are there models that are harmful for some
 applications? We will see how to deal with these issue in the last laboratory.
 """
 
+import json
+
 import numpy as np
+from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TimeElapsedColumn
 
 from project.classifiers.gaussian_mixture_model import GaussianMixtureModel
-from project.figures.plots import scatter_3d
+from project.figures.plots import plot, scatter_3d
+from project.figures.rich import table
 from project.funcs.base import load_data, split_db_2to1
-from project.funcs.dcf import dcf
+from project.funcs.dcf import bayes_error_plot, dcf
 
 
 def lab10(DATA: str):
+    console = Console()
+
     X, y = load_data(DATA)
 
     (X_train, y_train), (X_val, y_val) = split_db_2to1(X.T, y)
@@ -50,6 +56,15 @@ def lab10(DATA: str):
     PRIOR = 0.1
 
     num_components = [1, 2, 4, 8, 16]
+
+    best_gmm_config = {
+        "cov_type": "full",
+        "min_dcf": np.inf,
+        "act_dcf": np.inf,
+        "components_false": 0,
+        "components_true": 0,
+        "scores": None,
+    }
 
     # training with "full" GMM
 
@@ -71,7 +86,7 @@ def lab10(DATA: str):
                     cov_type="full",
                 )
                 scores = gmm.log_likelihood_ratio
-                min_dcf = dcf(scores, y_val, PRIOR, 1.0, 1.0, "min", True)
+                min_dcf = dcf(scores, y_val, PRIOR, 1.0, 1.0, "min")
 
                 min_dcfs_with_combinations.append(
                     {
@@ -80,6 +95,18 @@ def lab10(DATA: str):
                         "components_true": components_true,
                     }
                 )
+
+                if min_dcf < best_gmm_config["min_dcf"]:
+                    best_gmm_config.update(
+                        {
+                            "cov_type": "full",
+                            "min_dcf": min_dcf,
+                            "act_dcf": dcf(scores, y_val, PRIOR, 1.0, 1.0, "optimal"),
+                            "components_false": components_false,
+                            "components_true": components_true,
+                            "scores": scores.tolist(),
+                        }
+                    )
 
                 progress.update(task, advance=1)
 
@@ -91,10 +118,6 @@ def lab10(DATA: str):
         xlabel="Number of components (False)",
         ylabel="Number of components (True)",
         zlabel="minDCF",
-    )
-
-    print(
-        f"Best combination: {min_dcfs_with_combinations[np.argmin([c['minDCF'] for c in min_dcfs_with_combinations])]}"
     )
 
     # training with "diagonal" GMM
@@ -117,7 +140,7 @@ def lab10(DATA: str):
                     cov_type="diagonal",
                 )
                 scores = gmm.log_likelihood_ratio
-                min_dcf = dcf(scores, y_val, PRIOR, 1.0, 1.0, "min", True)
+                min_dcf = dcf(scores, y_val, PRIOR, 1.0, 1.0, "min")
 
                 min_dcfs_with_combinations.append(
                     {
@@ -126,6 +149,18 @@ def lab10(DATA: str):
                         "components_true": components_true,
                     }
                 )
+
+                if min_dcf < best_gmm_config["min_dcf"]:
+                    best_gmm_config.update(
+                        {
+                            "cov_type": "diagonal",
+                            "min_dcf": min_dcf,
+                            "act_dcf": dcf(scores, y_val, PRIOR, 1.0, 1.0, "optimal"),
+                            "components_false": components_false,
+                            "components_true": components_true,
+                            "scores": scores.tolist(),
+                        }
+                    )
 
                 progress.update(task, advance=1)
 
@@ -139,6 +174,67 @@ def lab10(DATA: str):
         zlabel="minDCF",
     )
 
-    print(
-        f"Best combination: {min_dcfs_with_combinations[np.argmin([c['minDCF'] for c in min_dcfs_with_combinations])]}"
+    table(console, "Best GMM configuration", best_gmm_config)
+
+    with open("configs/best_gmm_config.json", "w") as f:
+        json.dump(best_gmm_config, f)
+
+    # Analyze the best combinations of SVM, LogReg and GMM
+
+    best_log_reg_config = json.load(open("configs/best_log_reg_config.json"))
+    best_svm_config = json.load(open("configs/best_svm_config.json"))
+
+    table(
+        console,
+        "Models comparison",
+        {
+            "DCF": ["min", "act"],
+            "GMM": [best_gmm_config["min_dcf"], best_gmm_config["act_dcf"]],
+            "LogReg": [best_log_reg_config["min_dcf"], best_log_reg_config["act_dcf"]],
+            "SVM": [best_svm_config["min_dcf"], best_svm_config["act_dcf"]],
+        },
+    )
+
+    # Qualitative analysis on different applications for GMM
+
+    log_odds, act_dcf_gmm, min_dcf_gmm = bayes_error_plot(
+        np.array(best_gmm_config["scores"]), y_val
+    )
+
+    # Qualitative analysis on different applications for LogReg
+
+    log_odds, act_dcf_log_reg, min_dcf_log_reg = bayes_error_plot(
+        np.array(best_log_reg_config["scores"]), y_val
+    )
+
+    # Qualitative analysis on different applications for SVM
+
+    log_odds, act_dcf_svm, min_dcf_svm = bayes_error_plot(
+        np.array(best_svm_config["scores"]), y_val
+    )
+
+    plot(
+        {
+            "GMM": act_dcf_gmm,
+            "LogReg": act_dcf_log_reg,
+            "SVM": act_dcf_svm,
+        },
+        log_odds,
+        file_name="models_act_dcf",
+        xlabel="Effective prior log odds",
+        ylabel="DCF",
+        marker="",
+    )
+
+    plot(
+        {
+            "GMM": min_dcf_gmm,
+            "LogReg": min_dcf_log_reg,
+            "SVM": min_dcf_svm,
+        },
+        log_odds,
+        file_name="models_min_dcf",
+        xlabel="Effective prior log odds",
+        ylabel="DCF",
+        marker="",
     )
