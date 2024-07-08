@@ -72,7 +72,6 @@ from project.figures.plots import plot
 from project.figures.rich import table
 from project.funcs.base import load_data, split_db_2to1
 from project.funcs.dcf import dcf
-from project.funcs.kernel import poly_kernel, rbf_kernel
 
 
 def lab09(DATA: str):
@@ -223,7 +222,7 @@ def lab09(DATA: str):
         for C in range_c:
             progress.console.print(f"[cyan]Training with C = {C}")
 
-            svm.train(C, "kernel", K=1, kernel_func=poly_kernel(2, 1))
+            svm.train(C, "kernel", K=1, kernel_func="poly_kernel", degree=2, c=1)
             scores = svm.llr
             min_dcfs.append(dcf(scores, y_val, PRIOR, 1.0, 1.0, "min"))
             act_dcfs.append(dcf(scores, y_val, PRIOR, 1.0, 1.0, "optimal"))
@@ -285,7 +284,7 @@ def lab09(DATA: str):
             for C in Cs:
                 progress.console.print(f"[cyan]Training with γ = {g} and C = {C}")
 
-                svm.train(C, "kernel", K=1, kernel_func=rbf_kernel(g))
+                svm.train(C, "kernel", K=1, kernel_func="rbf_kernel", gamma=g)
                 scores = svm.llr
                 min_dcfs.append(dcf(scores, y_val, PRIOR, 1.0, 1.0, "min"))
                 act_dcfs.append(dcf(scores, y_val, PRIOR, 1.0, 1.0, "optimal"))
@@ -338,7 +337,7 @@ def lab09(DATA: str):
         for C in range_c:
             progress.console.print(f"[cyan]Training with C = {C}")
 
-            svm.train(C, "kernel", K=1, kernel_func=poly_kernel(4, 1))
+            svm.train(C, "kernel", K=1, kernel_func="poly_kernel", degree=4, c=1)
             scores = svm.llr
             min_dcfs.append(dcf(scores, y_val, PRIOR, 1.0, 1.0, "min"))
             act_dcfs.append(dcf(scores, y_val, PRIOR, 1.0, 1.0, "optimal"))
