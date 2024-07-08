@@ -295,7 +295,6 @@ def lab09(DATA: str):
                             "min_dcf": min_dcfs[-1],
                             "act_dcf": act_dcfs[-1],
                             "C": C,
-                            "gamma": g,
                             "svm_type": "kernel",
                             "kernel_func": f"rbf_kernel({g})",
                             "centered": False,
