@@ -78,7 +78,7 @@ class BinaryGaussian:
         return 100 - self.accuracy
 
     @property
-    def log_likelihood_ratio(self) -> npt.NDArray:
+    def llr(self) -> npt.NDArray:
         """
         Log likelihood ratio of the classifier. llr(xₜ) = log(𝑓(xₜ|h₁) / 𝑓(xₜ|h₀))
         """
@@ -174,7 +174,7 @@ class BinaryGaussian:
         Returns:
             ArrayLike: Predicted classes of the samples in the validation set.
         """
-        return self.log_likelihood_ratio > self._optimal_threshold(pi_T, C_fn, C_fp)
+        return self.llr > self._optimal_threshold(pi_T, C_fn, C_fp)
 
     @deprecated(
         reason="General prediction function for `N` classes not needed in the binary problem, use `predict` instead."

@@ -64,6 +64,7 @@ def lab10(DATA: str):
         "components_false": 0,
         "components_true": 0,
         "scores": None,
+        "model": None,
     }
 
     # training with "full" GMM
@@ -105,6 +106,7 @@ def lab10(DATA: str):
                             "components_false": components_false,
                             "components_true": components_true,
                             "scores": scores.tolist(),
+                            "model": gmm.to_json(),
                         }
                     )
 
@@ -159,6 +161,7 @@ def lab10(DATA: str):
                             "components_false": components_false,
                             "components_true": components_true,
                             "scores": scores.tolist(),
+                            "model": gmm.to_json(),
                         }
                     )
 
@@ -174,10 +177,14 @@ def lab10(DATA: str):
         zlabel="minDCF",
     )
 
-    table(console, "Best GMM configuration", best_gmm_config)
-
     with open("configs/best_gmm_config.json", "w") as f:
         json.dump(best_gmm_config, f)
+
+    scores = best_gmm_config.pop("scores")
+    model = best_gmm_config.pop("model")
+    table(console, "Best GMM configuration", best_gmm_config)
+    best_gmm_config["scores"] = scores
+    best_gmm_config["model"] = model
 
     # Analyze the best combinations of SVM, LogReg and GMM
 

@@ -72,8 +72,8 @@ def lab03(DATA: str):
         console,
         "Mean of the projected class means",
         {
-            "Threshold": [f"{threshold:.2f}"],
-            "Error rate": [f"{np.sum(y_val != y_pred) / y_val.size * 100:.2f}%"],
+            "Threshold": f"{threshold:.2f}",
+            "Error rate": f"{np.sum(y_val != y_pred) / y_val.size * 100:.2f}%",
         },
     )
 
@@ -94,8 +94,8 @@ def lab03(DATA: str):
         console,
         "Brute force search",
         {
-            "Threshold": [f"{empricial_threshold:.2f}"],
-            "Error rate": [f"{empirical_error_rate:.2f}%"],
+            "Threshold": f"{empricial_threshold:.2f}",
+            "Error rate": f"{empirical_error_rate:.2f}%",
         },
     )
 

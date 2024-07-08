@@ -12,4 +12,4 @@ repos:
     rev: 7.0.0
     hooks:
       - id: flake8
-        args: ["--extend-ignore=E501,E203,E741"]
+        args: ["--extend-ignore=E501,E203,E741,E402"]

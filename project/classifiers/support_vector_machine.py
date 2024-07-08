@@ -23,7 +23,7 @@ class SupportVectorMachine:
         K: int = 1,
         eps: float = 1,
         kernel_func: Callable[[npt.NDArray, npt.NDArray], npt.NDArray] | None = None,
-    ) -> npt.NDArray:
+    ) -> None:
         """
         Train the support vector machine classifier using the training data and the
         specified hyperparameters.
@@ -40,26 +40,25 @@ class SupportVectorMachine:
 
         Raises:
             ValueError: Kernel function must be provided when using kernel SVM
-
-        Returns:
-            npt.NDArray: the scores of the classifier on the validation data
         """
 
-        if svm_type == "kernel" and kernel_func is None:
+        self._svm_type = svm_type
+
+        if self._svm_type == "kernel" and kernel_func is None:
             raise ValueError("Kernel function must be provided when using kernel SVM")
 
         ZTR = self.y_train * 2.0 - 1.0  # Convert labels to +1/-1
 
-        if svm_type == "linear":
+        if self._svm_type == "linear":
             DTR_EXT = np.vstack([self.X_train, np.ones((1, self.X_train.shape[1])) * K])
             ker = np.dot(DTR_EXT.T, DTR_EXT)
         else:
             ker = kernel_func(self.X_train, self.X_train) + eps  # type: ignore
 
-        H = ker * vcol(ZTR) * vrow(ZTR)
+        self._H = ker * vcol(ZTR) * vrow(ZTR)
 
         # Dual objective with gradient
-        fopt = partial(self.__function_optimize, H)
+        fopt = partial(self.__function_optimize, self._H)
 
         alpha_star, *_ = opt.fmin_l_bfgs_b(
             fopt,
@@ -67,29 +66,34 @@ class SupportVectorMachine:
             bounds=[(0, C) for _ in self.y_train],
         )
 
-        if svm_type == "linear":
+        if self._svm_type == "linear":
             # Compute primal solution for extended data matrix
             w_hat = (vrow(alpha_star) * vrow(ZTR) * DTR_EXT).sum(1)
 
-            # Extract w and b - alternatively, we could construct the extended matrix for the samples to score and use directly v
-            w, b = (
+            self._weights, self._bias = (
                 w_hat[0 : self.X_train.shape[0]],
                 w_hat[-1] * K,
             )  # b must be rescaled in case K != 1, since we want to compute w'x + b * K
 
             self.primal_loss = self.__calculate_primal_loss(w_hat, DTR_EXT, ZTR, C)
-            self.dual_loss = -self.__function_optimize(H, alpha_star)[0]
+            self.dual_loss = -self.__function_optimize(self._H, alpha_star)[0]
             self.duality_gap = self.primal_loss - self.dual_loss
-
-            self.scores = (vrow(w) @ self.X_val + b).ravel()
         else:
-            self.dual_loss = -self.__function_optimize(H, alpha_star)[0]
+            self.dual_loss = -self.__function_optimize(self._H, alpha_star)[0]
 
             ker = kernel_func(self.X_train, self.X_val) + eps  # type: ignore
-            H = vcol(alpha_star) * vcol(ZTR) * ker
-            self.scores = H.sum(0)  # compute the fscore
+            self._H = vcol(alpha_star) * vcol(ZTR) * ker
 
-        return self.scores
+    @property
+    def llr(self) -> npt.NDArray:
+        """
+        Log-likelihood ratio of the classifier.
+        """
+
+        if self._svm_type == "linear":
+            return (vrow(self._weights) @ self.X_val + self._bias).ravel()
+        else:
+            return self._H.sum(0)  # compute the fscore
 
     @staticmethod
     @njit(cache=True)
@@ -104,3 +108,20 @@ class SupportVectorMachine:
     def __calculate_primal_loss(w_hat, DTR_EXT, ZTR, C):
         S = (vrow(w_hat) @ DTR_EXT).ravel()
         return 0.5 * np.linalg.norm(w_hat) ** 2 + C * np.maximum(0, 1 - ZTR * S).sum()
+
+    def to_json(self) -> dict:
+        return {
+            "H": self._H.tolist(),
+            "weights": self._weights.tolist(),
+            "bias": self._bias,
+            "svm_type": self._svm_type,
+        }
+
+    @staticmethod
+    def from_json(data: dict) -> "SupportVectorMachine":
+        svm = SupportVectorMachine.__new__(SupportVectorMachine)
+        svm._H = data["H"]
+        svm._weights = data["weights"]
+        svm._bias = data["bias"]
+        svm._svm_type = data["svm_type"]
+        return svm

@@ -46,7 +46,7 @@ def lab04(DATA: str):
         Console(),
         "ML estimates for the parameters",
         {
-            "means": [f"{means}"],
-            "vars": [f"{vars}"],
+            "means": f"{means}",
+            "vars": f"{vars}",
         },
     )

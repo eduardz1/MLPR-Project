@@ -95,6 +95,7 @@ def lab09(DATA: str):
         "kernel_func": None,
         "centered": False,
         "scores": None,
+        "model": None,
     }
 
     # Linear SVM with DCF and MinDCF as C varies
@@ -113,7 +114,8 @@ def lab09(DATA: str):
         for C in range_c:
             progress.console.print(f"[cyan]Training with C = {C}")
 
-            scores = svm.train(C, "linear", K=1)
+            svm.train(C, "linear", K=1)
+            scores = svm.llr
             min_dcfs.append(dcf(scores, y_val, PRIOR, 1.0, 1.0, "min"))
             act_dcfs.append(dcf(scores, y_val, PRIOR, 1.0, 1.0, "optimal"))
 
@@ -127,6 +129,7 @@ def lab09(DATA: str):
                         "kernel_func": None,
                         "centered": False,
                         "scores": scores.tolist(),
+                        "model": svm.to_json(),
                     }
                 )
 
@@ -168,7 +171,8 @@ def lab09(DATA: str):
         for C in range_c:
             progress.console.print(f"[cyan]Training with C = {C}")
 
-            scores = svm_centered.train(C, "linear", K=1)
+            svm_centered.train(C, "linear", K=1)
+            scores = svm_centered.llr
             min_dcfs.append(dcf(scores, y_val, PRIOR, 1.0, 1.0, "min"))
             act_dcfs.append(dcf(scores, y_val, PRIOR, 1.0, 1.0, "optimal"))
 
@@ -182,6 +186,7 @@ def lab09(DATA: str):
                         "kernel_func": None,
                         "centered": True,
                         "scores": scores.tolist(),
+                        "model": svm_centered.to_json(),
                     }
                 )
 
@@ -218,7 +223,8 @@ def lab09(DATA: str):
         for C in range_c:
             progress.console.print(f"[cyan]Training with C = {C}")
 
-            scores = svm.train(C, "kernel", K=1, kernel_func=poly_kernel(2, 1))
+            svm.train(C, "kernel", K=1, kernel_func=poly_kernel(2, 1))
+            scores = svm.llr
             min_dcfs.append(dcf(scores, y_val, PRIOR, 1.0, 1.0, "min"))
             act_dcfs.append(dcf(scores, y_val, PRIOR, 1.0, 1.0, "optimal"))
 
@@ -232,6 +238,7 @@ def lab09(DATA: str):
                         "kernel_func": "poly_kernel(2, 1)",
                         "centered": False,
                         "scores": scores.tolist(),
+                        "model": svm.to_json(),
                     }
                 )
 
@@ -278,7 +285,8 @@ def lab09(DATA: str):
             for C in Cs:
                 progress.console.print(f"[cyan]Training with γ = {g} and C = {C}")
 
-                scores = svm.train(C, "kernel", K=1, kernel_func=rbf_kernel(g))
+                svm.train(C, "kernel", K=1, kernel_func=rbf_kernel(g))
+                scores = svm.llr
                 min_dcfs.append(dcf(scores, y_val, PRIOR, 1.0, 1.0, "min"))
                 act_dcfs.append(dcf(scores, y_val, PRIOR, 1.0, 1.0, "optimal"))
 
@@ -293,6 +301,7 @@ def lab09(DATA: str):
                             "kernel_func": f"rbf_kernel({g})",
                             "centered": False,
                             "scores": scores.tolist(),
+                            "model": svm.to_json(),
                         }
                     )
 
@@ -329,7 +338,8 @@ def lab09(DATA: str):
         for C in range_c:
             progress.console.print(f"[cyan]Training with C = {C}")
 
-            scores = svm.train(C, "kernel", K=1, kernel_func=poly_kernel(4, 1))
+            svm.train(C, "kernel", K=1, kernel_func=poly_kernel(4, 1))
+            scores = svm.llr
             min_dcfs.append(dcf(scores, y_val, PRIOR, 1.0, 1.0, "min"))
             act_dcfs.append(dcf(scores, y_val, PRIOR, 1.0, 1.0, "optimal"))
 
@@ -343,6 +353,7 @@ def lab09(DATA: str):
                         "kernel_func": "poly_kernel(4, 1)",
                         "centered": False,
                         "scores": scores.tolist(),
+                        "model": svm.to_json(),
                     }
                 )
 
@@ -360,7 +371,9 @@ def lab09(DATA: str):
         ylabel="DCF",
     )
 
-    table(console, "Best SVM Configuration", best_svm_config)
-
     with open("configs/best_svm_config.json", "w") as f:
         json.dump(best_svm_config, f)
+
+    best_svm_config.pop("scores")
+    best_svm_config.pop("model")
+    table(console, "Best SVM Configuration", best_svm_config)

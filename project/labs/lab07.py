@@ -101,14 +101,14 @@ def lab07(DATA: str):
     cl.fit(classifier="multivariate")
 
     for pi in effective_priors:
-        d = dcf(cl.log_likelihood_ratio, y_val, pi, 1, 1, strategy="optimal")
-        min_dcf = dcf(cl.log_likelihood_ratio, y_val, pi, 1, 1, strategy="min")
+        d = dcf(cl.llr, y_val, pi, 1, 1, strategy="optimal")
+        min_dcf = dcf(cl.llr, y_val, pi, 1, 1, strategy="min")
 
     for m in range(1, 7):
         cl.fit(classifier="multivariate", pca_dimensions=m)
         for pi in effective_priors:
-            d = dcf(cl.log_likelihood_ratio, y_val, pi, 1, 1, strategy="optimal")
-            min_dcf = dcf(cl.log_likelihood_ratio, y_val, pi, 1, 1, strategy="min")
+            d = dcf(cl.llr, y_val, pi, 1, 1, strategy="optimal")
+            min_dcf = dcf(cl.llr, y_val, pi, 1, 1, strategy="min")
 
             if min_dcf < best_setups[pi][0]:
                 best_setups[pi] = (min_dcf, "multivariate", m)
@@ -121,13 +121,13 @@ def lab07(DATA: str):
     cl.fit(classifier="tied")
 
     for pi in effective_priors:
-        d = dcf(cl.log_likelihood_ratio, y_val, pi, 1, 1, strategy="optimal")
-        min_dcf = dcf(cl.log_likelihood_ratio, y_val, pi, 1, 1, strategy="min")
+        d = dcf(cl.llr, y_val, pi, 1, 1, strategy="optimal")
+        min_dcf = dcf(cl.llr, y_val, pi, 1, 1, strategy="min")
 
     for m in range(1, 7):
         cl.fit(classifier="tied", pca_dimensions=m)
         for pi in effective_priors:
-            d = dcf(cl.log_likelihood_ratio, y_val, pi, 1, 1, strategy="optimal")
+            d = dcf(cl.llr, y_val, pi, 1, 1, strategy="optimal")
 
             if d < best_setups[pi][0]:
                 best_setups[pi] = (d, "tied", m)
@@ -135,20 +135,20 @@ def lab07(DATA: str):
             if pi == 0.1 and d < best_pca_01_setups["tied"][0]:
                 best_pca_01_setups["tied"] = (d, m)
 
-            min_dcf = dcf(cl.log_likelihood_ratio, y_val, pi, 1, 1, strategy="min")
+            min_dcf = dcf(cl.llr, y_val, pi, 1, 1, strategy="min")
 
     # Analyze the Naive Gaussian Classifier
 
     cl.fit(classifier="naive")
 
     for pi in effective_priors:
-        d = dcf(cl.log_likelihood_ratio, y_val, pi, 1, 1, strategy="optimal")
-        min_dcf = dcf(cl.log_likelihood_ratio, y_val, pi, 1, 1, strategy="min")
+        d = dcf(cl.llr, y_val, pi, 1, 1, strategy="optimal")
+        min_dcf = dcf(cl.llr, y_val, pi, 1, 1, strategy="min")
 
     for m in range(1, 7):
         cl.fit(classifier="naive", pca_dimensions=m)
         for pi in effective_priors:
-            d = dcf(cl.log_likelihood_ratio, y_val, pi, 1, 1, strategy="optimal")
+            d = dcf(cl.llr, y_val, pi, 1, 1, strategy="optimal")
 
             if d < best_setups[pi][0]:
                 best_setups[pi] = (d, "naive", m)
@@ -156,7 +156,7 @@ def lab07(DATA: str):
             if pi == 0.1 and d < best_pca_01_setups["naive"][0]:
                 best_pca_01_setups["naive"] = (d, m)
 
-            min_dcf = dcf(cl.log_likelihood_ratio, y_val, pi, 1, 1, strategy="min")
+            min_dcf = dcf(cl.llr, y_val, pi, 1, 1, strategy="min")
 
     table(
         console,
@@ -182,7 +182,7 @@ def lab07(DATA: str):
     for model in ["multivariate", "tied", "naive"]:
         cl.fit(classifier=model, pca_dimensions=best_pca_01_setups[model][1])  # type: ignore
 
-        log_odds, act_dcf, min_dcf = bayes_error_plot(cl.log_likelihood_ratio, y_val)
+        log_odds, act_dcf, min_dcf = bayes_error_plot(cl.llr, y_val)
 
         plot(
             {

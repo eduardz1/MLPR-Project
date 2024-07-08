@@ -1,5 +1,9 @@
 from multiprocessing import Pool, cpu_count
-from typing import Callable
+from typing import Callable, Dict, List
+
+import matplotlib
+
+matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -21,7 +25,7 @@ def _hist(args):
     X, y, i, kwargs = args
 
     plt.ioff()
-    plt.figure(figsize=kwargs.get("figsize", FIG_SIZE))
+    fig = plt.figure(figsize=kwargs.get("figsize", FIG_SIZE))
 
     plt.hist(
         X.T[:, y == 0][i],
@@ -40,7 +44,7 @@ def _hist(args):
 
     plt.tight_layout()
     plt.savefig(f"{IMG_FOLDER}/hist/{kwargs.get('file_name')}_{i}.svg")
-    plt.close()
+    plt.close(fig)
 
 
 def hist(X, y, **kwargs):
@@ -63,7 +67,7 @@ def _scatter(args):
     X, y, i, j, kwargs = args
 
     plt.ioff()
-    plt.figure(figsize=kwargs.get("figsize", FIG_SIZE))
+    fig = plt.figure(figsize=kwargs.get("figsize", FIG_SIZE))
 
     # Plot first both classes so that x and y axis are the same size, then plot
     # the two classes separately to blend the svgs and better show the overlap
@@ -99,7 +103,7 @@ def _scatter(args):
         transparent=True,
         dpi=300,
     )
-    plt.close()
+    plt.close(fig)
 
     # Needed to better visualize difference between overlapping points, it's
     # faster to parse SVG files rather than using the .tostring() method on a
@@ -150,15 +154,33 @@ def scatter_3d(x, y, z, **kwargs):
     plt.tight_layout()
 
     plt.savefig(f"{IMG_FOLDER}/{kwargs.get('file_name')}.svg")
-    plt.close()
+    plt.close(fig)
 
 
-def plot(dict: dict[str, list], range: npt.ArrayLike, **kwargs) -> None:
+def plot(
+    data: Dict[str, List],
+    range: npt.ArrayLike,
+    colors: List[str] | None = None,
+    linestyles: List[str] | None = None,
+    **kwargs,
+) -> None:
     plt.ioff()
-    plt.figure(figsize=kwargs.get("figsize", FIG_SIZE))
+    fig = plt.figure(figsize=kwargs.get("figsize", FIG_SIZE))
 
-    for key, value in dict.items():
-        plt.plot(range, value, label=key, marker=kwargs.get("marker", "o"))
+    for index, (key, value) in enumerate(data.items()):
+        color = colors[index] if colors and index < len(colors) else None
+        linestyle = (
+            linestyles[index] if linestyles and index < len(linestyles) else "solid"
+        )
+
+        plt.plot(
+            range,
+            value,
+            label=key,
+            marker=kwargs.get("marker", "o"),
+            color=color,
+            linestyle=linestyle,
+        )
 
     plt.xlabel(kwargs.get("xlabel", "x"))
     plt.ylabel(kwargs.get("ylabel", "y"))
@@ -170,7 +192,7 @@ def plot(dict: dict[str, list], range: npt.ArrayLike, **kwargs) -> None:
     plt.tight_layout()
 
     plt.savefig(f"{IMG_FOLDER}/{kwargs.get('file_name')}.svg")
-    plt.close()
+    plt.close(fig)
 
 
 def densities(
@@ -205,7 +227,7 @@ def _densities(args):
     X, y, means, vars, logpdf, i, j = args
 
     plt.ioff()
-    plt.figure(figsize=FIG_SIZE)
+    fig = plt.figure(figsize=FIG_SIZE)
 
     color = "red" if i == 0 else "blue"
     x = np.linspace(X[y == i][:, j].min(), X[y == i][:, j].max(), 100)
@@ -226,7 +248,7 @@ def _densities(args):
 
     plt.tight_layout()
     plt.savefig(f"{IMG_FOLDER}/densities/density_{i}_{j}.svg")
-    plt.close()
+    plt.close(fig)
 
 
 def blend_svgs(svg1, svg2, path):
@@ -255,7 +277,7 @@ def blend_svgs(svg1, svg2, path):
 
 def heatmap(X: npt.NDArray, cmap: str, file_name: str) -> None:
     plt.ioff()
-    plt.figure(figsize=FIG_SIZE)
+    fig = plt.figure(figsize=FIG_SIZE)
 
     sns.heatmap(
         X,
@@ -268,4 +290,4 @@ def heatmap(X: npt.NDArray, cmap: str, file_name: str) -> None:
 
     plt.tight_layout()
     plt.savefig(f"{IMG_FOLDER}/heatmaps/{file_name}.svg")
-    plt.close()
+    plt.close(fig)

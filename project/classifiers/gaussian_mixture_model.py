@@ -39,6 +39,22 @@ class GaussianMixtureModel:
             for gmm, num_component in zip(self.gmms, num_components):
                 gmm.train(num_components=num_component, **kwargs)
 
+    def to_json(self) -> dict:
+        return {
+            "gmms": [gmm.to_json() for gmm in self.gmms],
+        }
+
+    @staticmethod
+    def from_json(data: dict) -> "GaussianMixtureModel":
+        gmms = []
+        for gmm in data["gmms"]:
+            gmms.append(SingleGMM.from_json(gmm))
+
+        gmm = GaussianMixtureModel.__new__(GaussianMixtureModel)
+        gmm.gmms = gmms
+
+        return gmm
+
 
 @dataclass
 class SingleGMM:
@@ -189,3 +205,16 @@ class SingleGMM:
         U, s, _ = np.linalg.svd(C)
         s[s < psi] = psi
         return U @ (vcol(s) * U.T)
+
+    def to_json(self) -> dict:
+        return {
+            "params": [
+                (w.tolist(), mu.tolist(), C.tolist()) for w, mu, C in self.params
+            ]
+        }
+
+    @staticmethod
+    def from_json(data: dict) -> "SingleGMM":
+        gmm = SingleGMM.__new__(SingleGMM)
+        gmm.params = data["params"]
+        return gmm

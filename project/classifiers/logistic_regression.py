@@ -58,23 +58,26 @@ class LogisticRegression:
             approx_grad=approx_grad,
         )
 
-        w, b = x[:-1], x[-1]
-
-        self.__S = w @ self.X_val + b
+        self._weights, self._bias = x[:-1], x[-1]
 
         return f
 
     @property
-    def log_likelihood_ratio(self) -> npt.NDArray:
+    def scores(self) -> npt.NDArray:
+        """
+        Scores of the classifier.
+        """
+
+        return self._weights @ self.X_val + self._bias
+
+    @property
+    def llr(self) -> npt.NDArray:
         """
         Log likelihood ratio of the classifier.
         """
+        pi = self.__prior if self.__prior_weighted else np.mean(self.y_train)
 
-        if self.__prior_weighted:
-            return self.__S.ravel() - np.log(self.__prior / (1 - self.__prior))
-        else:
-            pi_emp = np.mean(self.y_train)  # Fractions of samples of class 1
-            return self.__S.ravel() - np.log(pi_emp / (1 - pi_emp))
+        return self.scores - np.log(pi / (1 - pi))
 
     @property
     def error_rate(self) -> float:
@@ -82,7 +85,7 @@ class LogisticRegression:
         Error rate measure of the classifier.
         """
 
-        LP = self.__S > 0
+        LP = self.scores > 0
         return np.mean(LP != self.y_val)
 
     @staticmethod
@@ -186,3 +189,16 @@ class LogisticRegression:
             return f, vgrad
 
         return f, None
+
+    def to_json(self) -> dict:
+        return {
+            "weights": self._weights.tolist(),
+            "bias": self._bias,
+        }
+
+    @staticmethod
+    def from_json(data: dict) -> "LogisticRegression":
+        log_reg = LogisticRegression.__new__(LogisticRegression)
+        log_reg._weights = np.array(data["weights"])
+        log_reg._bias = data["bias"]
+        return log_reg

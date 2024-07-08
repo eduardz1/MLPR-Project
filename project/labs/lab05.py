@@ -105,40 +105,28 @@ def lab05(DATA: str):
 
     cl = BinaryGaussian(X_train, y_train, X_val, y_val)
 
+    stats = {
+        "Accuracy": "",
+        "Error rate": "",
+    }
+
+    def save_stats(accuracy, error_rate):
+        stats["Accuracy"] = f"{accuracy:.2f}%"
+        stats["Error rate"] = f"{error_rate:.2f}%"
+
     # Analyze performance of various classifiers with the full dataset
 
     cl.fit(classifier="multivariate")
-    table(
-        console,
-        "MV Gaussian classifier",
-        {
-            "Accuracy": [f"{cl.accuracy:.2f}%"],
-            "Error rate": [f"{cl.error_rate:.2f}%"],
-        },
-        cl.log_likelihood_ratio,
-    )
+    save_stats(cl.accuracy, cl.error_rate)
+    table(console, "MV Gaussian classifier", stats, cl.llr)
 
     cl.fit(classifier="tied")
-    table(
-        console,
-        "Tied Covariance Gaussian classifier",
-        {
-            "Accuracy": [f"{cl.accuracy:.2f}%"],
-            "Error rate": [f"{cl.error_rate:.2f}%"],
-        },
-        cl.log_likelihood_ratio,
-    )
+    save_stats(cl.accuracy, cl.error_rate)
+    table(console, "Tied Covariance Gaussian classifier", stats, cl.llr)
 
     cl.fit(classifier="naive")
-    table(
-        console,
-        "Naive Gaussian classifier",
-        {
-            "Accuracy": [f"{cl.accuracy:.2f}%"],
-            "Error rate": [f"{cl.error_rate:.2f}%"],
-        },
-        cl.log_likelihood_ratio,
-    )
+    save_stats(cl.accuracy, cl.error_rate)
+    table(console, "Naive Gaussian classifier", stats, cl.llr)
 
     # Display the covariance matrix of each class
 
@@ -146,8 +134,8 @@ def lab05(DATA: str):
         console,
         "Covariance matrices",
         {
-            "Fake": [f"{cl.covariances[0]}"],
-            "Genuine": [f"{cl.covariances[1]}"],
+            "Fake": f"{cl.covariances[0]}",
+            "Genuine": f"{cl.covariances[1]}",
         },
     )
 
@@ -157,8 +145,8 @@ def lab05(DATA: str):
         console,
         "Correlation matrices",
         {
-            "Fake": [f"{cl.corrcoef[0]}"],
-            "Genuine": [f"{cl.corrcoef[1]}"],
+            "Fake": f"{cl.corrcoef[0]}",
+            "Genuine": f"{cl.corrcoef[1]}",
         },
     )
 
@@ -173,84 +161,70 @@ def lab05(DATA: str):
     # which do not fit well with the Gaussian assumption
 
     cl.fit(classifier="multivariate", slicer=slice(-2))
+    save_stats(cl.accuracy, cl.error_rate)
     table(
         console,
         "MV Gaussian classifier (without last two features)",
-        {
-            "Accuracy": [f"{cl.accuracy:.2f}%"],
-            "Error rate": [f"{cl.error_rate:.2f}%"],
-        },
-        cl.log_likelihood_ratio,
+        stats,
+        cl.llr,
     )
 
     cl.fit(classifier="tied", slicer=slice(-2))
+    save_stats(cl.accuracy, cl.error_rate)
     table(
         console,
         "Tied Covariance Gaussian classifier (without last two features)",
-        {
-            "Accuracy": [f"{cl.accuracy:.2f}%"],
-            "Error rate": [f"{cl.error_rate:.2f}%"],
-        },
-        cl.log_likelihood_ratio,
+        stats,
+        cl.llr,
     )
 
     cl.fit(classifier="naive", slicer=slice(-2))
+    save_stats(cl.accuracy, cl.error_rate)
     table(
         console,
         "Naive Gaussian classifier (without last two features)",
-        {
-            "Accuracy": [f"{cl.accuracy:.2f}%"],
-            "Error rate": [f"{cl.error_rate:.2f}%"],
-        },
-        cl.log_likelihood_ratio,
+        stats,
+        cl.llr,
     )
 
     # Benchmark MVG and Tied Covariance Gaussian classifiers for first two features
 
     cl.fit(classifier="multivariate", slicer=slice(2))
+    save_stats(cl.accuracy, cl.error_rate)
     table(
         console,
         "MV Gaussian classifier (first two features)",
-        {
-            "Accuracy": [f"{cl.accuracy:.2f}%"],
-            "Error rate": [f"{cl.error_rate:.2f}%"],
-        },
-        cl.log_likelihood_ratio,
+        stats,
+        cl.llr,
     )
 
     cl.fit(classifier="tied", slicer=slice(2))
+    save_stats(cl.accuracy, cl.error_rate)
     table(
         console,
         "Tied Covariance Gaussian classifier (first two features)",
-        {
-            "Accuracy": [f"{cl.accuracy:.2f}%"],
-            "Error rate": [f"{cl.error_rate:.2f}%"],
-        },
-        cl.log_likelihood_ratio,
+        stats,
+        cl.llr,
     )
 
     # Benchmark MVG and Tied Covariance Gaussian classifiers for third and fourth features
 
     cl.fit(classifier="multivariate", slicer=slice(2, 4))
+    save_stats(cl.accuracy, cl.error_rate)
     table(
         console,
         "MV Gaussian classifier (third and fourth features)",
-        {
-            "Accuracy": [f"{cl.accuracy:.2f}%"],
-            "Error rate": [f"{cl.error_rate:.2f}%"],
-        },
-        cl.log_likelihood_ratio,
+        stats,
+        cl.llr,
     )
 
     cl.fit(classifier="tied", slicer=slice(2, 4))
+    save_stats(cl.accuracy, cl.error_rate)
     table(
         console,
         "Tied Covariance Gaussian classifier (third and fourth features)",
-        {
-            "Accuracy": [f"{cl.accuracy:.2f}%"],
-            "Error rate": [f"{cl.error_rate:.2f}%"],
-        },
-        cl.log_likelihood_ratio,
+        stats,
+        cl.llr,
     )
 
     # Try to reduce the dimensionality with PCA

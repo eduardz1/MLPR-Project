@@ -86,6 +86,65 @@ from project.funcs.base import load_data, quadratic_feature_expansion, split_db_
 from project.funcs.dcf import dcf
 
 
+def compute_logistic_regression(
+    X_train,
+    y_train,
+    X_val,
+    y_val,
+    lambdas,
+    prior,
+    best_log_reg_config,
+    prior_weighted=False,
+    quadratic=False,
+    centered=False,
+):
+    applications = {
+        "λ": [],
+        "J(w*,b*)": [],
+        "Error rate": [],
+        "minDCF": [],
+        "actDCF": [],
+    }
+
+    if quadratic:
+        X_train = quadratic_feature_expansion(X_train)
+        X_val = quadratic_feature_expansion(X_val)
+
+    if centered:
+        X_train = X_train - X_train.mean(axis=1, keepdims=True)
+        X_val = X_val - X_val.mean(axis=1, keepdims=True)
+
+    cl = LogisticRegression(X_train, y_train, X_val, y_val)
+
+    for l in lambdas:
+        f = cl.train(l, prior, prior_weighted)
+
+        min_dcf = dcf(cl.llr, y_val, prior, 1, 1, "min")
+        act_dcf = dcf(cl.llr, y_val, prior, 1, 1, "optimal")
+
+        applications["λ"].append(l)
+        applications["J(w*,b*)"].append(f)
+        applications["Error rate"].append(cl.error_rate)
+        applications["minDCF"].append(min_dcf)
+        applications["actDCF"].append(act_dcf)
+
+        if min_dcf < best_log_reg_config["min_dcf"]:
+            best_log_reg_config.update(
+                {
+                    "lambda": l,
+                    "prior_weighted": prior_weighted,
+                    "quadratic": quadratic,
+                    "centered": centered,
+                    "min_dcf": min_dcf,
+                    "act_dcf": act_dcf,
+                    "scores": cl.llr.tolist(),
+                    "model": cl.to_json(),
+                }
+            )
+
+    return applications
+
+
 def lab08(DATA: str):
     console = Console()
 
@@ -105,68 +164,13 @@ def lab08(DATA: str):
         "min_dcf": np.inf,
         "act_dcf": np.inf,
         "scores": None,
+        "model": None,
     }
-
-    def compute_logistic_regression(
-        X_train,
-        y_train,
-        X_val,
-        y_val,
-        lambdas,
-        prior,
-        prior_weighted=False,
-        quadratic=False,
-        centered=False,
-    ):
-        applications = {
-            "λ": [],
-            "J(w*,b*)": [],
-            "Error rate": [],
-            "minDCF": [],
-            "actDCF": [],
-        }
-
-        if quadratic:
-            X_train = quadratic_feature_expansion(X_train)
-            X_val = quadratic_feature_expansion(X_val)
-
-        if centered:
-            X_train = X_train - X_train.mean(axis=1, keepdims=True)
-            X_val = X_val - X_val.mean(axis=1, keepdims=True)
-
-        cl = LogisticRegression(X_train, y_train, X_val, y_val)
-
-        for l in lambdas:
-            f = cl.train(l, prior, prior_weighted)
-
-            min_dcf = dcf(cl.log_likelihood_ratio, y_val, prior, 1, 1, "min")
-            act_dcf = dcf(cl.log_likelihood_ratio, y_val, prior, 1, 1, "optimal")
-
-            applications["λ"].append(l)
-            applications["J(w*,b*)"].append(f)
-            applications["Error rate"].append(cl.error_rate)
-            applications["minDCF"].append(min_dcf)
-            applications["actDCF"].append(act_dcf)
-
-            if min_dcf < best_log_reg_config["min_dcf"]:
-                best_log_reg_config.update(
-                    {
-                        "lambda": l,
-                        "prior_weighted": prior_weighted,
-                        "quadratic": quadratic,
-                        "centered": centered,
-                        "min_dcf": min_dcf,
-                        "act_dcf": act_dcf,
-                        "scores": cl.log_likelihood_ratio.tolist(),
-                    }
-                )
-
-        return applications
 
     # Compute the standard logistic regression model
 
     applications = compute_logistic_regression(
-        X_train, y_train, X_val, y_val, lambdas, PRIOR
+        X_train, y_train, X_val, y_val, lambdas, PRIOR, best_log_reg_config
     )
 
     table(console, "Logistic regression", applications)
@@ -187,7 +191,7 @@ def lab08(DATA: str):
     X_train_s, y_train_s = X_train[:, ::50], y_train[::50]
 
     applications = compute_logistic_regression(
-        X_train_s, y_train_s, X_val, y_val, lambdas, PRIOR
+        X_train_s, y_train_s, X_val, y_val, lambdas, PRIOR, best_log_reg_config
     )
 
     table(console, "Logistic regression (1 in 50)", applications)
@@ -206,7 +210,14 @@ def lab08(DATA: str):
 
     # Repeat with the prior-weighted version of the model
     applications = compute_logistic_regression(
-        X_train, y_train, X_val, y_val, lambdas, PRIOR, prior_weighted=True
+        X_train,
+        y_train,
+        X_val,
+        y_val,
+        lambdas,
+        PRIOR,
+        best_log_reg_config,
+        prior_weighted=True,
     )
 
     table(console, "Prior-weighted logistic regression", applications)
@@ -226,7 +237,14 @@ def lab08(DATA: str):
     # Compute the quadratic logistic regression model
 
     applications = compute_logistic_regression(
-        X_train, y_train, X_val, y_val, lambdas, PRIOR, quadratic=True
+        X_train,
+        y_train,
+        X_val,
+        y_val,
+        lambdas,
+        PRIOR,
+        best_log_reg_config,
+        quadratic=True,
     )
 
     table(console, "Quadratic logistic regression", applications)
@@ -251,6 +269,7 @@ def lab08(DATA: str):
         y_val,
         lambdas,
         PRIOR,
+        best_log_reg_config,
         prior_weighted=True,
         quadratic=True,
     )
@@ -272,7 +291,14 @@ def lab08(DATA: str):
     # Centering the data and repeat the analysis
 
     applications = compute_logistic_regression(
-        X_train, y_train, X_val, y_val, lambdas, PRIOR, centered=True
+        X_train,
+        y_train,
+        X_val,
+        y_val,
+        lambdas,
+        PRIOR,
+        best_log_reg_config,
+        centered=True,
     )
 
     table(console, "Centered logistic regression", applications)
@@ -289,7 +315,9 @@ def lab08(DATA: str):
         ylabel="DCF",
     )
 
-    table(console, "Best logistic regression setup", best_log_reg_config)
-
     with open("configs/best_log_reg_config.json", "w") as f:
         json.dump(best_log_reg_config, f)
+
+    best_log_reg_config.pop("scores")
+    best_log_reg_config.pop("model")
+    table(console, "Best logistic regression setup", best_log_reg_config)

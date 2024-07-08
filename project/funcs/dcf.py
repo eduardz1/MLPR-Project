@@ -93,9 +93,9 @@ def dcf(
 def bayes_error_plot(
     scores: npt.NDArray,
     labels: npt.NDArray,
-    left: float = -4,
-    right: float = 4,
-    num_points: int = 100,
+    left: float = -3,
+    right: float = 3,
+    num_points: int = 21,
 ) -> tuple[npt.ArrayLike, list, list]:
     """
     Utility function to compute the actual and minimum DCF values for a range
@@ -105,11 +105,11 @@ def bayes_error_plot(
         scores (npt.NDArray): The log-likelihood ratio values.
         labels (npt.NDArray): The true labels.
         left (float, optional): The left bound of the effective prior range.
-            Defaults to -4.
+            Defaults to -3.
         right (float, optional): The right bound of the effective prior range.
-            Defaults to 4.
+            Defaults to 3.
         num_points (int, optional): The number of points to use in the range.
-            Defaults to 100.
+            Defaults to 21.
 
     Returns:
         Tuple[npt.ArrayLike, list, list]: The effective priors,

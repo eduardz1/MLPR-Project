@@ -1,7 +1,7 @@
-from typing import Optional
+from typing import Any
 
 import numpy as np
-from numpy.typing import ArrayLike
+import numpy.typing as npt
 from rich.console import Console
 from rich.table import Table, box
 
@@ -9,8 +9,8 @@ from rich.table import Table, box
 def table(
     console: Console,
     title: str,
-    dictionary: dict[str, list],
-    llr: Optional[ArrayLike] = None,
+    dictionary: dict[str, list | Any],
+    llr: npt.ArrayLike | None = None,
     render: bool = True,
 ):
     table = Table(title=title, box=box.ROUNDED)
@@ -24,7 +24,18 @@ def table(
         table.add_column(key, justify="center")
 
     for i in range(len(values[0])):
-        row = [f"{value[i]}" for value in values]
+        row = [
+            (
+                f"{value[i]:.4f}"
+                if isinstance(value[i], float)
+                else (
+                    f"{*value[i],}"  # noqa: E231
+                    if isinstance(value[i], list)
+                    else f"{value[i]}"
+                )
+            )
+            for value in values
+        ]
         table.add_row(*row)
 
     if render:

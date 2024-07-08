@@ -121,12 +121,6 @@ def parse_args():
 
 def main():
     console = Console()
-
-    # TODO: Enable this once python 3.12 support is added
-    # https://github.com/matplotlib/mplcairo/issues/51
-    # os.environ["MPLBACKEND"] = "module://mplcairo.base"
-    os.environ["MPLBACKEND"] = "Agg"
-
     args = parse_args()
 
     def run_labs():
