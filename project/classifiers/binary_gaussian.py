@@ -3,7 +3,6 @@ from typing import Literal
 
 import numpy as np
 import numpy.typing as npt
-from deprecated import deprecated
 
 from project.funcs.base import corr, cov
 from project.funcs.log_pdf import log_pdf_gaussian
@@ -175,16 +174,6 @@ class BinaryGaussian:
             ArrayLike: Predicted classes of the samples in the validation set.
         """
         return self.llr > self._optimal_threshold(pi_T, C_fn, C_fp)
-
-    @deprecated(
-        reason="General prediction function for `N` classes not needed in the binary problem, use `predict` instead."
-    )
-    def predict_general(self) -> npt.ArrayLike:
-        SJoint = np.exp(self.__S) * 0.5
-        SMarginal = SJoint.sum(axis=0)
-        SPost = SJoint / SMarginal
-
-        return np.argmax(SPost, axis=0)
 
     @cache
     def _optimal_threshold(self, pi_T: float, C_fn: float, C_fp: float) -> npt.NDArray:

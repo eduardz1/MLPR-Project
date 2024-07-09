@@ -158,9 +158,9 @@ class LogisticRegression:
             n_T = np.sum(LTR == 1)
             n_F = len(LTR) - n_T
 
-            weights = np.where(LTR == 1, prior / n_T, (1 - prior) / n_F)
+            Xi = np.where(LTR == 1, prior / n_T, (1 - prior) / n_F)
         else:  # Uniform weights, no slow down after jit compilation
-            weights = np.ones_like(LTR) / len(LTR)
+            Xi = np.ones_like(LTR) / len(LTR)
 
         # Logistic regression objective function,
         # J(w, b) = λ/2 * ||w||² + (1/n) ∑_{i=1}^{n} ξᵢ log(1 + exp(-zᵢ(wᵀxᵢ + b)),
@@ -168,18 +168,18 @@ class LogisticRegression:
         # prior-weighted logistic regression objective is used, otherwise
         # J(w, b) = λ/2 * ||w||² + (1/n) ∑_{i=1}^{n} log(1 + exp(-zᵢ(wᵀxᵢ + b)),
         # where zᵢ = 1 if cᵢ = 1, otherwise zᵢ = -1 if cᵢ = 0 (i.e. zᵢ = 2cᵢ - 1)
-        f = l / 2 * np.linalg.norm(w) ** 2 + np.sum(weights * np.logaddexp(0, -ZTR * S))
+        f = l / 2 * np.linalg.norm(w) ** 2 + np.sum(Xi * np.logaddexp(0, -ZTR * S))
 
         if not approx_grad:
             # Gradient with respect to w, ∇wJ = λw + ∑_{i=1}^{n} ξᵢGᵢxᵢ if
             # prior-weighted logistic regression objective is used,
             # otherwise ∇wJ = λw + (1/n)∑_{i=1}^{n} Gᵢxᵢ
-            GW = l * w + (weights * vrow(G) * DTR).sum(axis=1)
+            GW = l * w + (Xi * vrow(G) * DTR).sum(axis=1)
 
             # Gradient with respect to b, ∇bJ = ∑_{i=1}^{n} ξᵢGᵢ if
             # prior-weighted logistic regression objective is used,
             # otherwise ∇bJ = (1/n)∑_{i=1}^{n} Gᵢ
-            Gb = atleast_1d(np.sum(weights * G))
+            Gb = atleast_1d(np.sum(Xi * G))
 
             return f, np.hstack((GW, Gb))
 

@@ -1,3 +1,4 @@
+import time
 from dataclasses import dataclass
 from functools import partial
 from typing import Literal
@@ -47,6 +48,8 @@ class SupportVectorMachine:
                 to 1.
         """
 
+        start_time = time.perf_counter()
+
         self._svm_type = svm_type
         self._kernel_func = kernel_func
         self._eps = eps
@@ -68,20 +71,26 @@ class SupportVectorMachine:
 
         H = zizj * vcol(ZTR) * vrow(ZTR)
 
+        scipy_time = time.perf_counter()
         self._alpha_star, *_ = opt.fmin_l_bfgs_b(
-            partial(self.__function_optimize, H),
+            partial(self.__objective, H),
             np.zeros(self.X_train.shape[1]),
             bounds=[(0, C) for _ in self.y_train],
         )
+        scipy_time = time.perf_counter() - scipy_time
 
-        if svm_type == "linear":  # Save the weights and bias
+        if svm_type == "linear":
             # Compute primal solution for extended data matrix
             w_hat = (vrow(self._alpha_star) * vrow(ZTR) * DTR_EXT).sum(1)
 
-            self._weights, self._bias = (
-                w_hat[0 : self.X_train.shape[0]],
-                w_hat[-1] * K,
-            )  # b must be rescaled in case K != 1, since we want to compute w'x + b * K
+            # b must be rescaled in case K != 1, since we want to compute w'x + b * K
+            self._weights, self._bias = (w_hat[:-1], w_hat[-1] * K)
+
+        end_time = time.perf_counter()
+
+        # Print the time taken for scipy optimization compared to the total time
+        print(f"Scipy optimization time: {scipy_time:.2f} seconds")
+        print(f"Total time: {end_time - start_time:.2f} seconds")
 
     @property
     def llr(self) -> npt.NDArray:
@@ -105,7 +114,7 @@ class SupportVectorMachine:
 
     @staticmethod
     @njit(cache=True)
-    def __function_optimize(H, alpha):
+    def __objective(H: npt.NDArray[np.float64], alpha: npt.NDArray[np.float64]):
         Ha = H @ vcol(alpha)
         loss = 0.5 * (vrow(alpha) @ Ha).ravel() - alpha.sum()
         grad = Ha.ravel() - np.ones(alpha.size)
@@ -113,12 +122,19 @@ class SupportVectorMachine:
 
     @staticmethod
     @njit(cache=True)
-    def poly_kernel(D1, D2, degree, c):
+    def poly_kernel(
+        D1: npt.NDArray[np.float64],
+        D2: npt.NDArray[np.float64],
+        degree: float,
+        c: float,
+    ):
         return (np.dot(D1.T, D2) + c) ** degree
 
     @staticmethod
     @njit(cache=True)
-    def rbf_kernel(D1, D2, gamma):
+    def rbf_kernel(
+        D1: npt.NDArray[np.float64], D2: npt.NDArray[np.float64], gamma: float
+    ):
         # Fast method to compute all pair-wise distances. Exploit the fact that
         # |x-y|^2 = |x|^2 + |y|^2 - 2 x^T y, combined with broadcasting
         D1Norms = (D1**2).sum(0)
