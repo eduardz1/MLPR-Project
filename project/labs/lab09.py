@@ -369,6 +369,8 @@ def lab09(DATA: str):
         ylabel="DCF",
     )
 
+    # TODO: part about considering only the last two features
+
     with open("configs/best_svm_config.json", "w") as f:
         json.dump(best_svm_config, f)
 

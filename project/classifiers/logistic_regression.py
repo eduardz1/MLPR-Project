@@ -6,7 +6,7 @@ import numpy.typing as npt
 import scipy.optimize as opt
 from numba import njit
 
-from project.funcs.base import vrow
+from project.funcs.base import atleast_1d, vrow
 
 
 @dataclass
@@ -21,7 +21,7 @@ class LogisticRegression:
         l: float,
         prior: float,
         prior_weighted: bool = False,
-        approx_grad: bool = True,
+        approx_grad: bool = False,
     ):
         """
         Train the logistic regression classifier using the training data and the
@@ -171,22 +171,17 @@ class LogisticRegression:
         f = l / 2 * np.linalg.norm(w) ** 2 + np.sum(weights * np.logaddexp(0, -ZTR * S))
 
         if not approx_grad:
-            # fmt: off
-            vgrad = np.array(
-                [
-                    # Gradient with respect to w, ∇wJ = λw + ∑_{i=1}^{n} ξᵢGᵢxᵢ if
-                    # prior-weighted logistic regression objective is used,
-                    # otherwise ∇wJ = λw + (1/n)∑_{i=1}^{n} Gᵢxᵢ
-                    *(l * w + np.sum(weights * vrow(G) * DTR)),
+            # Gradient with respect to w, ∇wJ = λw + ∑_{i=1}^{n} ξᵢGᵢxᵢ if
+            # prior-weighted logistic regression objective is used,
+            # otherwise ∇wJ = λw + (1/n)∑_{i=1}^{n} Gᵢxᵢ
+            GW = l * w + (weights * vrow(G) * DTR).sum(axis=1)
 
-                    # Gradient with respect to b, ∇bJ = ∑_{i=1}^{n} ξᵢGᵢ if
-                    # prior-weighted logistic regression objective is used,
-                    # otherwise ∇bJ = (1/n)∑_{i=1}^{n} Gᵢ
-                    np.sum(weights * G),
-                ]
-            )
-            # fmt: on
-            return f, vgrad
+            # Gradient with respect to b, ∇bJ = ∑_{i=1}^{n} ξᵢGᵢ if
+            # prior-weighted logistic regression objective is used,
+            # otherwise ∇bJ = (1/n)∑_{i=1}^{n} Gᵢ
+            Gb = atleast_1d(np.sum(weights * G))
+
+            return f, np.hstack((GW, Gb))
 
         return f, None
 
