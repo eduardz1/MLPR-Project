@@ -282,7 +282,7 @@ def lab09(DATA: str):
             min_dcfs = []
 
             for C in Cs:
-                progress.console.print(f"[cyan]Training with γ = {g} and C = {C}")
+                progress.console.print(f"[cyan]Training with gamma = {g} and C = {C}")
 
                 svm.train(C, "kernel", K=1, kernel_func="rbf_kernel", gamma=g)
                 scores = svm.llr
@@ -329,7 +329,7 @@ def lab09(DATA: str):
         TimeElapsedColumn(),
     ) as progress:
         task = progress.add_task(
-            "Polynomial Kernel SVM with d = 4, c = 1, ξ = 0",
+            "Polynomial Kernel SVM with d = 4, c = 1, Xi = 0",
             total=len(range_c),
         )
 

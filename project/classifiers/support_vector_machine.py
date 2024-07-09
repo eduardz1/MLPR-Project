@@ -1,4 +1,3 @@
-import time
 from dataclasses import dataclass
 from functools import partial
 from typing import Literal
@@ -48,8 +47,6 @@ class SupportVectorMachine:
                 to 1.
         """
 
-        start_time = time.perf_counter()
-
         self._svm_type = svm_type
         self._kernel_func = kernel_func
         self._eps = eps
@@ -71,13 +68,11 @@ class SupportVectorMachine:
 
         H = zizj * vcol(ZTR) * vrow(ZTR)
 
-        scipy_time = time.perf_counter()
         self._alpha_star, *_ = opt.fmin_l_bfgs_b(
             partial(self.__objective, H),
             np.zeros(self.X_train.shape[1]),
             bounds=[(0, C) for _ in self.y_train],
         )
-        scipy_time = time.perf_counter() - scipy_time
 
         if svm_type == "linear":
             # Compute primal solution for extended data matrix
@@ -85,12 +80,6 @@ class SupportVectorMachine:
 
             # b must be rescaled in case K != 1, since we want to compute w'x + b * K
             self._weights, self._bias = (w_hat[:-1], w_hat[-1] * K)
-
-        end_time = time.perf_counter()
-
-        # Print the time taken for scipy optimization compared to the total time
-        print(f"Scipy optimization time: {scipy_time:.2f} seconds")
-        print(f"Total time: {end_time - start_time:.2f} seconds")
 
     @property
     def llr(self) -> npt.NDArray:

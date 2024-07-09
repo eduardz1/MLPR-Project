@@ -81,7 +81,7 @@ def lab07(DATA: str):
         effective_priors.append(e)
 
         console.print(
-            f"Application {i+1} ({{'π_T': {pi_T}, 'C_fn': {C_fn}, 'C_fp': {C_fp}}}) - Effective prior: {e}"
+            f"Application {i+1} ({{'pi_T': {pi_T}, 'C_fn': {C_fn}, 'C_fp': {C_fp}}}) - Effective prior: {e}"
         )
 
     effective_priors = np.unique(effective_priors)

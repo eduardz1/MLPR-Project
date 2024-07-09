@@ -5,16 +5,16 @@ We analyze the binary logistic regression model on the project data. We start
 considering the standard, non-weighted version of the model, without any
 pre-processing.
 
-Train the model using different values for λ. You can build logarthimic-spaced
-values for λ using `numpy.logspace`. To obtain good coverage, you can use
+Train the model using different values for lambda. You can build logarthimic-spaced
+values for lambda using `numpy.logspace`. To obtain good coverage, you can use
 `numpy.logspace(-4, 2, 13)` (check the documentation). Train the model with each
-value of λ, score the validation samples and compute the corresponding actual
+value of lambda, score the validation samples and compute the corresponding actual
 DCF and minimum DCF for the primary application πT = 0.1. To compute actual DCF
 remember to remove the log-odds of the training set empirical prior. Plot the
-two metrics as a function of λ (suggestion: use a logartihmic scale for the
+two metrics as a function of lambda (suggestion: use a logartihmic scale for the
 x-axis of the plot - to change the scale of the x-axis you can use
 `matplotlib.pyplot.xscale(’log’, base=10))`. What do you observe? Can you see
-significant differences for the different values of λ? How does the
+significant differences for the different values of lambda? How does the
 regularization coefficient affects the two metrics?
 
 Since we have a large number of samples, regularization seems ineffective, and
@@ -41,7 +41,7 @@ target prior when we build the model)?
 Repeat the analysis with the quadratic logistic regression model (again, full
 dataset only). Expand the features, train and evaluate the models (you can focus
 on the standard, non prior-weighted model only, as the results you would obtain
-are similar for the two models), again considering different values for λ. What
+are similar for the two models), again considering different values for lambda. What
 do you observe? In this case is regularization effective? How does it affect the
 two metrics?
 
@@ -99,7 +99,7 @@ def compute_logistic_regression(
     centered=False,
 ):
     applications = {
-        "λ": [],
+        "lambda": [],
         "J(w*,b*)": [],
         "Error rate": [],
         "minDCF": [],
@@ -122,7 +122,7 @@ def compute_logistic_regression(
         min_dcf = dcf(cl.llr, y_val, prior, 1, 1, "min")
         act_dcf = dcf(cl.llr, y_val, prior, 1, 1, "optimal")
 
-        applications["λ"].append(l)
+        applications["lambda"].append(l)
         applications["J(w*,b*)"].append(f)
         applications["Error rate"].append(cl.error_rate)
         applications["minDCF"].append(min_dcf)
@@ -180,10 +180,10 @@ def lab08(DATA: str):
             "minDCF": applications["minDCF"],
             "actDCF": applications["actDCF"],
         },
-        applications["λ"],
+        applications["lambda"],
         file_name="lambda_vs_dcf",
         xscale="log",
-        xlabel="λ",
+        xlabel="lambda",
         ylabel="DCF",
     )
 
@@ -201,10 +201,10 @@ def lab08(DATA: str):
             "minDCF": applications["minDCF"],
             "actDCF": applications["actDCF"],
         },
-        applications["λ"],
+        applications["lambda"],
         file_name="lambda_vs_dcf_50",
         xscale="log",
-        xlabel="λ",
+        xlabel="lambda",
         ylabel="DCF",
     )
 
@@ -227,10 +227,10 @@ def lab08(DATA: str):
             "minDCF": applications["minDCF"],
             "actDCF": applications["actDCF"],
         },
-        applications["λ"],
+        applications["lambda"],
         file_name="lambda_vs_dcf_prior",
         xscale="log",
-        xlabel="λ",
+        xlabel="lambda",
         ylabel="DCF",
     )
 
@@ -254,10 +254,10 @@ def lab08(DATA: str):
             "minDCF": applications["minDCF"],
             "actDCF": applications["actDCF"],
         },
-        applications["λ"],
+        applications["lambda"],
         file_name="lambda_vs_dcf_quadratic",
         xscale="log",
-        xlabel="λ",
+        xlabel="lambda",
         ylabel="DCF",
     )
 
@@ -281,10 +281,10 @@ def lab08(DATA: str):
             "minDCF": applications["minDCF"],
             "actDCF": applications["actDCF"],
         },
-        applications["λ"],
+        applications["lambda"],
         file_name="lambda_vs_dcf_quadratic_prior",
         xscale="log",
-        xlabel="λ",
+        xlabel="lambda",
         ylabel="DCF",
     )
 
@@ -308,10 +308,10 @@ def lab08(DATA: str):
             "minDCF": applications["minDCF"],
             "actDCF": applications["actDCF"],
         },
-        applications["λ"],
+        applications["lambda"],
         file_name="lambda_vs_dcf_centered",
         xscale="log",
-        xlabel="λ",
+        xlabel="lambda",
         ylabel="DCF",
     )
 
