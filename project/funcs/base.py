@@ -134,6 +134,17 @@ def confusion_matrix(y_true: npt.NDArray, y_pred: npt.NDArray) -> npt.NDArray[np
 def yield_confusion_matrices(
     y_true: npt.NDArray, thresholds: npt.NDArray
 ) -> Generator[npt.NDArray[np.int32], None, None]:
+    """
+    Efficient way of generating confusion matrices for a set of thresholds
+    without computing the entire confusion matrix for each threshold.
+
+    Args:
+        y_true (npt.NDArray): The true labels
+        thresholds (npt.NDArray): The thresholds to use
+
+    Yields:
+        Generator[npt.NDArray[np.int32], None, None]: The confusion matrices
+    """
     indices = np.argsort(thresholds)
     ts = thresholds[indices]
     sorted_y_val = y_true[indices]
