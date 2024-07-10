@@ -119,8 +119,8 @@ def compute_logistic_regression(
     for l in lambdas:
         f = cl.train(l, prior, prior_weighted)
 
-        min_dcf = dcf(cl.llr, y_val, prior, 1, 1, "min")
-        act_dcf = dcf(cl.llr, y_val, prior, 1, 1, "optimal")
+        min_dcf = dcf(cl.llr, y_val, prior, "min")
+        act_dcf = dcf(cl.llr, y_val, prior, "optimal")
 
         applications["lambda"].append(l)
         applications["J(w*,b*)"].append(f)
@@ -181,7 +181,7 @@ def lab08(DATA: str):
             "actDCF": applications["actDCF"],
         },
         applications["lambda"],
-        file_name="lambda_vs_dcf",
+        file_name="logreg/lambda_vs_dcf",
         xscale="log",
         xlabel="lambda",
         ylabel="DCF",
@@ -202,7 +202,7 @@ def lab08(DATA: str):
             "actDCF": applications["actDCF"],
         },
         applications["lambda"],
-        file_name="lambda_vs_dcf_50",
+        file_name="logreg/lambda_vs_dcf_50",
         xscale="log",
         xlabel="lambda",
         ylabel="DCF",
@@ -228,7 +228,7 @@ def lab08(DATA: str):
             "actDCF": applications["actDCF"],
         },
         applications["lambda"],
-        file_name="lambda_vs_dcf_prior",
+        file_name="logreg/lambda_vs_dcf_prior",
         xscale="log",
         xlabel="lambda",
         ylabel="DCF",
@@ -255,7 +255,7 @@ def lab08(DATA: str):
             "actDCF": applications["actDCF"],
         },
         applications["lambda"],
-        file_name="lambda_vs_dcf_quadratic",
+        file_name="logreg/lambda_vs_dcf_quadratic",
         xscale="log",
         xlabel="lambda",
         ylabel="DCF",
@@ -282,7 +282,7 @@ def lab08(DATA: str):
             "actDCF": applications["actDCF"],
         },
         applications["lambda"],
-        file_name="lambda_vs_dcf_quadratic_prior",
+        file_name="logreg/lambda_vs_dcf_quadratic_prior",
         xscale="log",
         xlabel="lambda",
         ylabel="DCF",
@@ -309,7 +309,7 @@ def lab08(DATA: str):
             "actDCF": applications["actDCF"],
         },
         applications["lambda"],
-        file_name="lambda_vs_dcf_centered",
+        file_name="logreg/lambda_vs_dcf_centered",
         xscale="log",
         xlabel="lambda",
         ylabel="DCF",

@@ -53,12 +53,13 @@ from project.classifiers.binary_gaussian import BinaryGaussian
 from project.figures.plots import plot
 from project.figures.rich import table
 from project.funcs.base import load_data, split_db_2to1
-from project.funcs.dcf import bayes_error_plot, dcf
+from project.funcs.dcf import bayes_error_plot, dcf_range
 from project.funcs.dcf import effective_prior as effective_prior
 
 
 def lab07(DATA: str):
     console = Console()
+
     X, y = load_data(DATA)
 
     (X_train, y_train), (X_val, y_val) = split_db_2to1(X.T, y)
@@ -86,77 +87,87 @@ def lab07(DATA: str):
 
     effective_priors = np.unique(effective_priors)
 
-    best_setups: dict[float, tuple[float, str, int]] = {
-        k: (np.inf, "", 0) for k in effective_priors
+    best_setups: dict[float, tuple[float, str, int | None, float]] = {
+        k: (np.inf, "", None, np.inf) for k in effective_priors
     }
 
-    best_pca_01_setups: dict[str, tuple[float, int]] = {
-        "multivariate": (np.inf, 0),
-        "tied": (np.inf, 0),
-        "naive": (np.inf, 0),
+    best_pca_01_setups: dict[str, tuple[float, int, float]] = {
+        "multivariate": (np.inf, 0, np.inf),
+        "tied": (np.inf, 0, np.inf),
+        "naive": (np.inf, 0, np.inf),
     }
 
     # Analyze the Multivariate Gaussian Classifier
 
     cl.fit(classifier="multivariate")
 
-    for pi in effective_priors:
-        d = dcf(cl.llr, y_val, pi, 1, 1, strategy="optimal")
-        min_dcf = dcf(cl.llr, y_val, pi, 1, 1, strategy="min")
+    act_dcfs = dcf_range(cl.llr, y_val, effective_priors, "optimal")
+    min_dcfs = dcf_range(cl.llr, y_val, effective_priors, "min")
+
+    for i, pi in enumerate(effective_priors):
+        if min_dcfs[i] < best_setups[pi][0]:
+            best_setups[pi] = (min_dcfs[i], "multivariate", None, act_dcfs[i])
 
     for m in range(1, 7):
         cl.fit(classifier="multivariate", pca_dimensions=m)
-        for pi in effective_priors:
-            d = dcf(cl.llr, y_val, pi, 1, 1, strategy="optimal")
-            min_dcf = dcf(cl.llr, y_val, pi, 1, 1, strategy="min")
 
-            if min_dcf < best_setups[pi][0]:
-                best_setups[pi] = (min_dcf, "multivariate", m)
+        act_dcfs = dcf_range(cl.llr, y_val, effective_priors, "optimal")
+        min_dcfs = dcf_range(cl.llr, y_val, effective_priors, "min")
 
-            if pi == 0.1 and d < best_pca_01_setups["multivariate"][0]:
-                best_pca_01_setups["multivariate"] = (min_dcf, m)
+        for i, pi in enumerate(effective_priors):
+            if min_dcfs[i] < best_setups[pi][0]:
+                best_setups[pi] = (act_dcfs[i], "multivariate", m, act_dcfs[i])
+
+            if pi == 0.1 and min_dcfs[i] < best_pca_01_setups["multivariate"][0]:
+                best_pca_01_setups["multivariate"] = (min_dcfs[i], m, act_dcfs[i])
 
     # Analyze the Tied Gaussian Classifier
 
     cl.fit(classifier="tied")
 
-    for pi in effective_priors:
-        d = dcf(cl.llr, y_val, pi, 1, 1, strategy="optimal")
-        min_dcf = dcf(cl.llr, y_val, pi, 1, 1, strategy="min")
+    act_dcfs = dcf_range(cl.llr, y_val, effective_priors, "optimal")
+    min_dcfs = dcf_range(cl.llr, y_val, effective_priors, "min")
+
+    for i, pi in enumerate(effective_priors):
+        if min_dcfs[i] < best_setups[pi][0]:
+            best_setups[pi] = (min_dcfs[i], "tied", None, act_dcfs[i])
 
     for m in range(1, 7):
         cl.fit(classifier="tied", pca_dimensions=m)
-        for pi in effective_priors:
-            d = dcf(cl.llr, y_val, pi, 1, 1, strategy="optimal")
 
-            if d < best_setups[pi][0]:
-                best_setups[pi] = (d, "tied", m)
+        act_dcfs = dcf_range(cl.llr, y_val, effective_priors, "optimal")
+        min_dcfs = dcf_range(cl.llr, y_val, effective_priors, "min")
 
-            if pi == 0.1 and d < best_pca_01_setups["tied"][0]:
-                best_pca_01_setups["tied"] = (d, m)
+        for i, pi in enumerate(effective_priors):
+            if min_dcfs[i] < best_setups[pi][0]:
+                best_setups[pi] = (act_dcfs[i], "tied", m, act_dcfs[i])
 
-            min_dcf = dcf(cl.llr, y_val, pi, 1, 1, strategy="min")
+            if pi == 0.1 and min_dcfs[i] < best_pca_01_setups["tied"][0]:
+                best_pca_01_setups["tied"] = (min_dcfs[i], m, act_dcfs[i])
 
     # Analyze the Naive Gaussian Classifier
 
     cl.fit(classifier="naive")
 
-    for pi in effective_priors:
-        d = dcf(cl.llr, y_val, pi, 1, 1, strategy="optimal")
-        min_dcf = dcf(cl.llr, y_val, pi, 1, 1, strategy="min")
+    act_dcfs = dcf_range(cl.llr, y_val, effective_priors, "optimal")
+    min_dcfs = dcf_range(cl.llr, y_val, effective_priors, "min")
+
+    for i, pi in enumerate(effective_priors):
+        if min_dcfs[i] < best_setups[pi][0]:
+            best_setups[pi] = (min_dcfs[i], "naive", None, act_dcfs[i])
 
     for m in range(1, 7):
         cl.fit(classifier="naive", pca_dimensions=m)
-        for pi in effective_priors:
-            d = dcf(cl.llr, y_val, pi, 1, 1, strategy="optimal")
 
-            if d < best_setups[pi][0]:
-                best_setups[pi] = (d, "naive", m)
+        act_dcfs = dcf_range(cl.llr, y_val, effective_priors, "optimal")
+        min_dcfs = dcf_range(cl.llr, y_val, effective_priors, "min")
 
-            if pi == 0.1 and d < best_pca_01_setups["naive"][0]:
-                best_pca_01_setups["naive"] = (d, m)
+        for i, pi in enumerate(effective_priors):
+            if min_dcfs[i] < best_setups[pi][0]:
+                best_setups[pi] = (act_dcfs[i], "naive", m, act_dcfs[i])
 
-            min_dcf = dcf(cl.llr, y_val, pi, 1, 1, strategy="min")
+            if pi == 0.1 and min_dcfs[i] < best_pca_01_setups["naive"][0]:
+                best_pca_01_setups["naive"] = (min_dcfs[i], m, act_dcfs[i])
 
     table(
         console,
@@ -166,6 +177,7 @@ def lab07(DATA: str):
             "Model": [v[1] for v in best_setups.values()],
             "PCA Dimensions": [v[2] for v in best_setups.values()],
             "Minimum DCF": [v[0] for v in best_setups.values()],
+            "Actual DCF": [v[3] for v in best_setups.values()],
         },
     )
 
@@ -176,6 +188,7 @@ def lab07(DATA: str):
             "Model": [k for k in best_pca_01_setups],
             "PCA Dimensions": [v[1] for v in best_pca_01_setups.values()],
             "Minimum DCF": [v[0] for v in best_pca_01_setups.values()],
+            "Actual DCF": [v[2] for v in best_pca_01_setups.values()],
         },
     )
 
@@ -190,6 +203,8 @@ def lab07(DATA: str):
                 "Min DCF": min_dcf,
             },
             log_odds,
+            colors=["blue", "blue"],
+            linestyles=["solid", "dashed"],
             file_name=f"{model}_prior_log_odds",
             xlabel="Effective prior log odds",
             ylabel="DCF",

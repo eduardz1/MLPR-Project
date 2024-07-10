@@ -87,7 +87,7 @@ def lab10(DATA: str):
                     cov_type="full",
                 )
                 scores = gmm.log_likelihood_ratio
-                min_dcf = dcf(scores, y_val, PRIOR, 1.0, 1.0, "min")
+                min_dcf = dcf(scores, y_val, PRIOR, "min")
 
                 min_dcfs_with_combinations.append(
                     {
@@ -102,7 +102,7 @@ def lab10(DATA: str):
                         {
                             "cov_type": "full",
                             "min_dcf": min_dcf,
-                            "act_dcf": dcf(scores, y_val, PRIOR, 1.0, 1.0, "optimal"),
+                            "act_dcf": dcf(scores, y_val, PRIOR, "optimal"),
                             "components_false": components_false,
                             "components_true": components_true,
                             "scores": scores.tolist(),
@@ -142,7 +142,7 @@ def lab10(DATA: str):
                     cov_type="diagonal",
                 )
                 scores = gmm.log_likelihood_ratio
-                min_dcf = dcf(scores, y_val, PRIOR, 1.0, 1.0, "min")
+                min_dcf = dcf(scores, y_val, PRIOR, "min")
 
                 min_dcfs_with_combinations.append(
                     {
@@ -157,7 +157,7 @@ def lab10(DATA: str):
                         {
                             "cov_type": "diagonal",
                             "min_dcf": min_dcf,
-                            "act_dcf": dcf(scores, y_val, PRIOR, 1.0, 1.0, "optimal"),
+                            "act_dcf": dcf(scores, y_val, PRIOR, "optimal"),
                             "components_false": components_false,
                             "components_true": components_true,
                             "scores": scores.tolist(),

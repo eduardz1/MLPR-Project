@@ -115,8 +115,8 @@ def lab09(DATA: str):
 
             svm.train(C, "linear", K=1)
             scores = svm.llr
-            min_dcfs.append(dcf(scores, y_val, PRIOR, 1.0, 1.0, "min"))
-            act_dcfs.append(dcf(scores, y_val, PRIOR, 1.0, 1.0, "optimal"))
+            min_dcfs.append(dcf(scores, y_val, PRIOR, "min"))
+            act_dcfs.append(dcf(scores, y_val, PRIOR, "optimal"))
 
             if min_dcfs[-1] < best_svm_config["min_dcf"]:
                 best_svm_config.update(
@@ -172,8 +172,8 @@ def lab09(DATA: str):
 
             svm_centered.train(C, "linear", K=1)
             scores = svm_centered.llr
-            min_dcfs.append(dcf(scores, y_val, PRIOR, 1.0, 1.0, "min"))
-            act_dcfs.append(dcf(scores, y_val, PRIOR, 1.0, 1.0, "optimal"))
+            min_dcfs.append(dcf(scores, y_val, PRIOR, "min"))
+            act_dcfs.append(dcf(scores, y_val, PRIOR, "optimal"))
 
             if min_dcfs[-1] < best_svm_config["min_dcf"]:
                 best_svm_config.update(
@@ -224,8 +224,8 @@ def lab09(DATA: str):
 
             svm.train(C, "kernel", K=1, kernel_func="poly_kernel", degree=2, c=1)
             scores = svm.llr
-            min_dcfs.append(dcf(scores, y_val, PRIOR, 1.0, 1.0, "min"))
-            act_dcfs.append(dcf(scores, y_val, PRIOR, 1.0, 1.0, "optimal"))
+            min_dcfs.append(dcf(scores, y_val, PRIOR, "min"))
+            act_dcfs.append(dcf(scores, y_val, PRIOR, "optimal"))
 
             if min_dcfs[-1] < best_svm_config["min_dcf"]:
                 best_svm_config.update(
@@ -286,8 +286,8 @@ def lab09(DATA: str):
 
                 svm.train(C, "kernel", K=1, kernel_func="rbf_kernel", gamma=g)
                 scores = svm.llr
-                min_dcfs.append(dcf(scores, y_val, PRIOR, 1.0, 1.0, "min"))
-                act_dcfs.append(dcf(scores, y_val, PRIOR, 1.0, 1.0, "optimal"))
+                min_dcfs.append(dcf(scores, y_val, PRIOR, "min"))
+                act_dcfs.append(dcf(scores, y_val, PRIOR, "optimal"))
 
                 if min_dcfs[-1] < best_svm_config["min_dcf"]:
                     best_svm_config.update(
@@ -338,8 +338,8 @@ def lab09(DATA: str):
 
             svm.train(C, "kernel", K=1, kernel_func="poly_kernel", degree=4, c=1)
             scores = svm.llr
-            min_dcfs.append(dcf(scores, y_val, PRIOR, 1.0, 1.0, "min"))
-            act_dcfs.append(dcf(scores, y_val, PRIOR, 1.0, 1.0, "optimal"))
+            min_dcfs.append(dcf(scores, y_val, PRIOR, "min"))
+            act_dcfs.append(dcf(scores, y_val, PRIOR, "optimal"))
 
             if min_dcfs[-1] < best_svm_config["min_dcf"]:
                 best_svm_config.update(

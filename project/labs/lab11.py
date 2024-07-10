@@ -107,7 +107,7 @@ def find_best_prior_and_plot_bayes_error(
 ):
     if not fusion:
         scores = np.array(eval(f"BEST_{model.upper()}_CONFIG")["scores"])
-        min_dcf_target = dcf(scores, y_val, TARGET_PRIOR, 1.0, 1.0, "min")
+        min_dcf_target = dcf(scores, y_val, TARGET_PRIOR, "min")
         log_odds, act_dcf_applications, min_dcf_applications = bayes_error_plot(
             scores, y_val
         )
@@ -154,9 +154,7 @@ def find_best_prior_and_plot_bayes_error(
                 calibrated_labels,
             )
 
-            act_dcf = dcf(
-                calibrated_scores, calibrated_labels, TARGET_PRIOR, 1.0, 1.0, "optimal"
-            )
+            act_dcf = dcf(calibrated_scores, calibrated_labels, TARGET_PRIOR, "optimal")
 
             if act_dcf < best_act_dcf_target:
                 best_act_dcf_target = act_dcf

@@ -130,7 +130,7 @@ def confusion_matrix(y_true: npt.NDArray, y_pred: npt.NDArray) -> npt.NDArray[np
     )
 
 
-@njit
+@njit(cache=True)
 def yield_confusion_matrices(
     y_true: npt.NDArray, thresholds: npt.NDArray
 ) -> Generator[npt.NDArray[np.int32], None, None]:
