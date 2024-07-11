@@ -70,7 +70,8 @@ lab_config = {
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Run the code for the project, separately for each labs. Optionally compile the report."
+        prog="python -m project",
+        description="Run the code for the project, separately for each labs. Optionally compile the report.",
     )
     parser.add_argument(
         "-c",
@@ -93,7 +94,7 @@ def parse_args():
         "-a",
         "--all",
         action="store_true",
-        help="run all project parts (does not compile the report)",
+        help="run all project parts",
     )
     exclusive_group.add_argument(
         "-l",
