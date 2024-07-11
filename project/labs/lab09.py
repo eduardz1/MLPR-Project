@@ -10,14 +10,14 @@ Apply the SVM to the project data. Start with the linear model (to avoid
 excessive training time we consider only the models trained with K = 1.0). Train
 the model with different values of C. As for logistic regression, you should
 employ a logarithmic scale for the values of C. Reasonable values are given by
-`numpy.logspace(-5, 0, 11)`. Plot the minDCF and actDCF ( T = 01) as a function of
-C (again, use a logarithmic scale for the x-axis). What do you observe? Does the
-regularization coefficient significantly affect the results for one or both
-metrics (remember that, for SVM, low values of C imply strong regularization,
-while large values of C imply weak regularization)? Are the scores well
-calibrated for the target application? What can we conclude on linear SVM? How
-does it perform compared to other linear models? Repeat the analysis with
-centered data. Are the result significantly different?
+`numpy.logspace(-5, 0, 11)`. Plot the minDCF and actDCF (pi_T = 0.1) as a
+function of C (again, use a logarithmic scale for the x-axis). What do you
+observe? Does the regularization coefficient significantly affect the results
+for one or both metrics (remember that, for SVM, low values of C imply strong
+regularization, while large values of C imply weak regularization)? Are the
+scores well calibrated for the target application? What can we conclude on
+linear SVM? How does it perform compared to other linear models? Repeat the
+analysis with centered data. Are the result significantly different?
 
 We now consider the polynomial kernel. For simplicity, we consider only the
 kernel with d = 2, c = 1 (but better results may be possible with different
@@ -115,8 +115,8 @@ def lab09(DATA: str):
 
             svm.train(C, "linear", K=1)
             scores = svm.llr
-            min_dcfs.append(dcf(scores, y_val, PRIOR, "min"))
-            act_dcfs.append(dcf(scores, y_val, PRIOR, "optimal"))
+            min_dcfs.append(dcf(scores, y_val, PRIOR, "min").item())
+            act_dcfs.append(dcf(scores, y_val, PRIOR, "optimal").item())
 
             if min_dcfs[-1] < best_svm_config["min_dcf"]:
                 best_svm_config.update(
@@ -172,8 +172,8 @@ def lab09(DATA: str):
 
             svm_centered.train(C, "linear", K=1)
             scores = svm_centered.llr
-            min_dcfs.append(dcf(scores, y_val, PRIOR, "min"))
-            act_dcfs.append(dcf(scores, y_val, PRIOR, "optimal"))
+            min_dcfs.append(dcf(scores, y_val, PRIOR, "min").item())
+            act_dcfs.append(dcf(scores, y_val, PRIOR, "optimal").item())
 
             if min_dcfs[-1] < best_svm_config["min_dcf"]:
                 best_svm_config.update(
@@ -224,8 +224,8 @@ def lab09(DATA: str):
 
             svm.train(C, "kernel", K=1, kernel_func="poly_kernel", degree=2, c=1)
             scores = svm.llr
-            min_dcfs.append(dcf(scores, y_val, PRIOR, "min"))
-            act_dcfs.append(dcf(scores, y_val, PRIOR, "optimal"))
+            min_dcfs.append(dcf(scores, y_val, PRIOR, "min").item())
+            act_dcfs.append(dcf(scores, y_val, PRIOR, "optimal").item())
 
             if min_dcfs[-1] < best_svm_config["min_dcf"]:
                 best_svm_config.update(
@@ -258,10 +258,10 @@ def lab09(DATA: str):
     # RBF Kernel SVM with DCF and minDCF as C varies
 
     gamma = [
-        ("e-4", np.exp(-4)),
-        ("e-3", np.exp(-3)),
-        ("e-2", np.exp(-2)),
-        ("e-1", np.exp(-1)),
+        ("$e^{-4}$", np.exp(-4)),
+        ("$e^{-3}$", np.exp(-3)),
+        ("$e^{-2}$", np.exp(-2)),
+        ("$e^{-1}$", np.exp(-1)),
     ]
     Cs = np.logspace(-3, 2, 11)
 
@@ -276,7 +276,10 @@ def lab09(DATA: str):
             total=len(Cs) * len(gamma),
         )
 
-        for l, g in gamma:
+        act_dcfs_gamma = []
+        min_dcfs_gamma = []
+
+        for _, g in gamma:
 
             act_dcfs = []
             min_dcfs = []
@@ -286,8 +289,8 @@ def lab09(DATA: str):
 
                 svm.train(C, "kernel", K=1, kernel_func="rbf_kernel", gamma=g)
                 scores = svm.llr
-                min_dcfs.append(dcf(scores, y_val, PRIOR, "min"))
-                act_dcfs.append(dcf(scores, y_val, PRIOR, "optimal"))
+                min_dcfs.append(dcf(scores, y_val, PRIOR, "min").item())
+                act_dcfs.append(dcf(scores, y_val, PRIOR, "optimal").item())
 
                 if min_dcfs[-1] < best_svm_config["min_dcf"]:
                     best_svm_config.update(
@@ -305,17 +308,30 @@ def lab09(DATA: str):
 
                 progress.update(task, advance=1)
 
-            plot(
-                {
-                    "minDCF": min_dcfs,
-                    "actDCF": act_dcfs,
+            act_dcfs_gamma.append(act_dcfs)
+            min_dcfs_gamma.append(min_dcfs)
+
+        plot(
+            {
+                **{
+                    f"minDCF {l}": min_dcf
+                    for (l, _), min_dcf in zip(gamma, min_dcfs_gamma)
                 },
-                Cs,
-                file_name=f"svm/rbf_kernel_{l}",
-                xscale="log",
-                xlabel="C",
-                ylabel="DCF",
-            )
+                **{
+                    f"actDCF {l}": act_dcf
+                    for (l, _), act_dcf in zip(gamma, act_dcfs_gamma)
+                },
+            },
+            Cs,
+            colors=[f"C{i % len(gamma)}" for i in range(len(gamma) * 2)],
+            linestyles=[
+                "dashed" if i < len(gamma) else "solid" for i in range(len(gamma) * 2)
+            ],
+            file_name="svm/rbf_kernel",
+            xscale="log",
+            xlabel="C",
+            ylabel="DCF",
+        )
 
     # Optional: Polynomial Kernel SVM with d = 4, c = 1, ξ = 0
 
@@ -338,8 +354,8 @@ def lab09(DATA: str):
 
             svm.train(C, "kernel", K=1, kernel_func="poly_kernel", degree=4, c=1)
             scores = svm.llr
-            min_dcfs.append(dcf(scores, y_val, PRIOR, "min"))
-            act_dcfs.append(dcf(scores, y_val, PRIOR, "optimal"))
+            min_dcfs.append(dcf(scores, y_val, PRIOR, "min").item())
+            act_dcfs.append(dcf(scores, y_val, PRIOR, "optimal").item())
 
             if min_dcfs[-1] < best_svm_config["min_dcf"]:
                 best_svm_config.update(

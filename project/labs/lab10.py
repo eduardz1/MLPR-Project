@@ -40,7 +40,7 @@ from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TimeElapsedColumn
 
 from project.classifiers.gaussian_mixture_model import GaussianMixtureModel
-from project.figures.plots import plot, scatter_3d
+from project.figures.plots import plot, plot_surface
 from project.figures.rich import table
 from project.funcs.base import load_data, split_db_2to1
 from project.funcs.dcf import bayes_error_plot, dcf
@@ -55,7 +55,7 @@ def lab10(DATA: str):
 
     PRIOR = 0.1
 
-    num_components = [1, 2, 4, 8, 16]
+    num_components = [1, 2, 4, 8, 16, 32]
 
     best_gmm_config = {
         "cov_type": "full",
@@ -85,9 +85,10 @@ def lab10(DATA: str):
                     apply_lbg=True,
                     num_components=[components_false, components_true],
                     cov_type="full",
+                    psi_eig=0.01,
                 )
                 scores = gmm.log_likelihood_ratio
-                min_dcf = dcf(scores, y_val, PRIOR, "min")
+                min_dcf = dcf(scores, y_val, PRIOR, "min").item()
 
                 min_dcfs_with_combinations.append(
                     {
@@ -102,7 +103,7 @@ def lab10(DATA: str):
                         {
                             "cov_type": "full",
                             "min_dcf": min_dcf,
-                            "act_dcf": dcf(scores, y_val, PRIOR, "optimal"),
+                            "act_dcf": dcf(scores, y_val, PRIOR, "optimal").item(),
                             "components_false": components_false,
                             "components_true": components_true,
                             "scores": scores.tolist(),
@@ -112,7 +113,7 @@ def lab10(DATA: str):
 
                 progress.update(task, advance=1)
 
-    scatter_3d(
+    plot_surface(
         [c["components_false"] for c in min_dcfs_with_combinations],
         [c["components_true"] for c in min_dcfs_with_combinations],
         [c["minDCF"] for c in min_dcfs_with_combinations],
@@ -120,6 +121,9 @@ def lab10(DATA: str):
         xlabel="Number of components (False)",
         ylabel="Number of components (True)",
         zlabel="minDCF",
+        figsize=(10, 10),
+        xticks=num_components,
+        yticks=num_components,
     )
 
     # training with "diagonal" GMM
@@ -140,9 +144,10 @@ def lab10(DATA: str):
                     apply_lbg=True,
                     num_components=[components_false, components_true],
                     cov_type="diagonal",
+                    psi_eig=0.01,
                 )
                 scores = gmm.log_likelihood_ratio
-                min_dcf = dcf(scores, y_val, PRIOR, "min")
+                min_dcf = dcf(scores, y_val, PRIOR, "min").item()
 
                 min_dcfs_with_combinations.append(
                     {
@@ -157,7 +162,7 @@ def lab10(DATA: str):
                         {
                             "cov_type": "diagonal",
                             "min_dcf": min_dcf,
-                            "act_dcf": dcf(scores, y_val, PRIOR, "optimal"),
+                            "act_dcf": dcf(scores, y_val, PRIOR, "optimal").item(),
                             "components_false": components_false,
                             "components_true": components_true,
                             "scores": scores.tolist(),
@@ -167,7 +172,7 @@ def lab10(DATA: str):
 
                 progress.update(task, advance=1)
 
-    scatter_3d(
+    plot_surface(
         [c["components_false"] for c in min_dcfs_with_combinations],
         [c["components_true"] for c in min_dcfs_with_combinations],
         [c["minDCF"] for c in min_dcfs_with_combinations],
@@ -175,6 +180,9 @@ def lab10(DATA: str):
         xlabel="Number of components (False)",
         ylabel="Number of components (True)",
         zlabel="minDCF",
+        figsize=(10, 10),
+        xticks=num_components,
+        yticks=num_components,
     )
 
     with open("configs/best_gmm_config.json", "w") as f:
@@ -222,9 +230,9 @@ def lab10(DATA: str):
 
     plot(
         {
-            "GMM": act_dcf_gmm,
-            "LogReg": act_dcf_log_reg,
-            "SVM": act_dcf_svm,
+            "GMM": act_dcf_gmm.tolist(),
+            "LogReg": act_dcf_log_reg.tolist(),
+            "SVM": act_dcf_svm.tolist(),
         },
         log_odds,
         file_name="models_act_dcf",
@@ -235,9 +243,9 @@ def lab10(DATA: str):
 
     plot(
         {
-            "GMM": min_dcf_gmm,
-            "LogReg": min_dcf_log_reg,
-            "SVM": min_dcf_svm,
+            "GMM": min_dcf_gmm.tolist(),
+            "LogReg": min_dcf_log_reg.tolist(),
+            "SVM": min_dcf_svm.tolist(),
         },
         log_odds,
         file_name="models_min_dcf",

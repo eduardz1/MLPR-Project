@@ -53,7 +53,7 @@ from project.classifiers.binary_gaussian import BinaryGaussian
 from project.figures.plots import plot
 from project.figures.rich import table
 from project.funcs.base import load_data, split_db_2to1
-from project.funcs.dcf import bayes_error_plot, dcf_range
+from project.funcs.dcf import bayes_error_plot, dcf
 from project.funcs.dcf import effective_prior as effective_prior
 
 
@@ -101,8 +101,8 @@ def lab07(DATA: str):
 
     cl.fit(classifier="multivariate")
 
-    act_dcfs = dcf_range(cl.llr, y_val, effective_priors, "optimal")
-    min_dcfs = dcf_range(cl.llr, y_val, effective_priors, "min")
+    act_dcfs = dcf(cl.llr, y_val, effective_priors, "optimal")
+    min_dcfs = dcf(cl.llr, y_val, effective_priors, "min")
 
     for i, pi in enumerate(effective_priors):
         if min_dcfs[i] < best_setups[pi][0]:
@@ -111,8 +111,8 @@ def lab07(DATA: str):
     for m in range(1, 7):
         cl.fit(classifier="multivariate", pca_dimensions=m)
 
-        act_dcfs = dcf_range(cl.llr, y_val, effective_priors, "optimal")
-        min_dcfs = dcf_range(cl.llr, y_val, effective_priors, "min")
+        act_dcfs = dcf(cl.llr, y_val, effective_priors, "optimal")
+        min_dcfs = dcf(cl.llr, y_val, effective_priors, "min")
 
         for i, pi in enumerate(effective_priors):
             if min_dcfs[i] < best_setups[pi][0]:
@@ -125,8 +125,8 @@ def lab07(DATA: str):
 
     cl.fit(classifier="tied")
 
-    act_dcfs = dcf_range(cl.llr, y_val, effective_priors, "optimal")
-    min_dcfs = dcf_range(cl.llr, y_val, effective_priors, "min")
+    act_dcfs = dcf(cl.llr, y_val, effective_priors, "optimal")
+    min_dcfs = dcf(cl.llr, y_val, effective_priors, "min")
 
     for i, pi in enumerate(effective_priors):
         if min_dcfs[i] < best_setups[pi][0]:
@@ -135,8 +135,8 @@ def lab07(DATA: str):
     for m in range(1, 7):
         cl.fit(classifier="tied", pca_dimensions=m)
 
-        act_dcfs = dcf_range(cl.llr, y_val, effective_priors, "optimal")
-        min_dcfs = dcf_range(cl.llr, y_val, effective_priors, "min")
+        act_dcfs = dcf(cl.llr, y_val, effective_priors, "optimal")
+        min_dcfs = dcf(cl.llr, y_val, effective_priors, "min")
 
         for i, pi in enumerate(effective_priors):
             if min_dcfs[i] < best_setups[pi][0]:
@@ -149,8 +149,8 @@ def lab07(DATA: str):
 
     cl.fit(classifier="naive")
 
-    act_dcfs = dcf_range(cl.llr, y_val, effective_priors, "optimal")
-    min_dcfs = dcf_range(cl.llr, y_val, effective_priors, "min")
+    act_dcfs = dcf(cl.llr, y_val, effective_priors, "optimal")
+    min_dcfs = dcf(cl.llr, y_val, effective_priors, "min")
 
     for i, pi in enumerate(effective_priors):
         if min_dcfs[i] < best_setups[pi][0]:
@@ -159,8 +159,8 @@ def lab07(DATA: str):
     for m in range(1, 7):
         cl.fit(classifier="naive", pca_dimensions=m)
 
-        act_dcfs = dcf_range(cl.llr, y_val, effective_priors, "optimal")
-        min_dcfs = dcf_range(cl.llr, y_val, effective_priors, "min")
+        act_dcfs = dcf(cl.llr, y_val, effective_priors, "optimal")
+        min_dcfs = dcf(cl.llr, y_val, effective_priors, "min")
 
         for i, pi in enumerate(effective_priors):
             if min_dcfs[i] < best_setups[pi][0]:
@@ -199,8 +199,8 @@ def lab07(DATA: str):
 
         plot(
             {
-                "DCF": act_dcf,
-                "Min DCF": min_dcf,
+                "DCF": act_dcf.tolist(),
+                "Min DCF": min_dcf.tolist(),
             },
             log_odds,
             colors=["blue", "blue"],

@@ -1,5 +1,3 @@
-from typing import Generator
-
 import numpy as np
 import numpy.typing as npt
 from numba import njit
@@ -66,7 +64,7 @@ def corr(X: npt.NDArray) -> npt.NDArray:
 
 
 @njit(cache=True)
-def atleast_1d(x):
+def atleast_1d(x) -> npt.NDArray:
     """
     Workaround for the numba issue with `np.atleast_1d`
     https://github.com/numba/numba/issues/4202
@@ -130,10 +128,10 @@ def confusion_matrix(y_true: npt.NDArray, y_pred: npt.NDArray) -> npt.NDArray[np
     )
 
 
-@njit(cache=True)
-def yield_confusion_matrices(
+@njit(cache=True, parallel=True)
+def compute_confusion_matrices(
     y_true: npt.NDArray, thresholds: npt.NDArray
-) -> Generator[npt.NDArray[np.int32], None, None]:
+) -> npt.NDArray[np.int32]:
     """
     Efficient way of generating confusion matrices for a set of thresholds
     without computing the entire confusion matrix for each threshold.
@@ -142,8 +140,8 @@ def yield_confusion_matrices(
         y_true (npt.NDArray): The true labels
         thresholds (npt.NDArray): The thresholds to use
 
-    Yields:
-        Generator[npt.NDArray[np.int32], None, None]: The confusion matrices
+    Returns:
+        npt.NDArray: [N, 2, 2] The confusion matrices for each threshold
     """
     indices = np.argsort(thresholds)
     ts = thresholds[indices]
@@ -156,17 +154,23 @@ def yield_confusion_matrices(
     FP = len(y_true) - TP
     FN = 0
 
-    for i in range(1, len(ts)):
-        y_pred[i - 1] = 0
+    cms = np.empty((len(ts) - 1, 2, 2), dtype=np.int32)
+    for i in range(len(ts) - 1):
+        y_pred[i] = 0
 
-        if sorted_y_val[i - 1] == 1:
+        if sorted_y_val[i] == 1:
             TP -= 1
             FN += 1
         else:
             FP -= 1
             TN += 1
 
-        yield np.array([[TN, FP], [FN, TP]])
+        cms[i, 0, 0] = TN
+        cms[i, 0, 1] = FP
+        cms[i, 1, 0] = FN
+        cms[i, 1, 1] = TP
+
+    return cms
 
 
 def quadratic_feature_expansion(X):

@@ -82,8 +82,8 @@ class LogRegObjTests(unittest.TestCase):
 
         S_llr = S.ravel() - np.log(PRIOR / (1 - PRIOR))
 
-        min_dcf = dcf(S_llr, self.LVAL, PRIOR, 1, 1, "min", normalize=True)
-        act_dcf = dcf(S_llr, self.LVAL, PRIOR, 1, 1, "optimal", normalize=True)
+        min_dcf = dcf(S_llr, self.LVAL, PRIOR, "min", normalize=True).item()
+        act_dcf = dcf(S_llr, self.LVAL, PRIOR, "optimal", normalize=True).item()
 
         np.testing.assert_almost_equal(min_dcf, 0.16666666666666666)
         np.testing.assert_almost_equal(act_dcf, 0.2222222222222222)
@@ -148,8 +148,8 @@ class LogRegObjTests(unittest.TestCase):
 
         S_llr = S.ravel() - np.log(PRIOR / (1 - PRIOR))
 
-        min_dcf = dcf(S_llr, self.LVAL, PRIOR, 1, 1, "min", normalize=True)
-        act_dcf = dcf(S_llr, self.LVAL, PRIOR, 1, 1, "optimal", normalize=True)
+        min_dcf = dcf(S_llr, self.LVAL, PRIOR, "min", normalize=True).item()
+        act_dcf = dcf(S_llr, self.LVAL, PRIOR, "optimal", normalize=True).item()
 
         np.testing.assert_almost_equal(min_dcf, 0.16666666666666666)
         np.testing.assert_almost_equal(act_dcf, 0.2222222222222222)

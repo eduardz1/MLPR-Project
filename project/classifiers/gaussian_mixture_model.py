@@ -105,7 +105,7 @@ class SingleGMM:
             ]
 
             while len(self.params) < num_components:
-                self.__lgb_split()
+                self.__lbg_split()
                 self.__train(cov_type, eps_ll_avg, psi_eig)
         else:
             self.__train(cov_type, eps_ll_avg, psi_eig)
@@ -170,7 +170,7 @@ class SingleGMM:
 
         self.params = new_params
 
-    def __lgb_split(self, alpha=0.1):
+    def __lbg_split(self, alpha=0.1):
         """
         Splits the components of the GMM using the Linde-Buzo-Gray algorithm
 

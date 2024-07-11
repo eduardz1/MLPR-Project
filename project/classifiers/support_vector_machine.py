@@ -72,6 +72,7 @@ class SupportVectorMachine:
             partial(self.__objective, H),
             np.zeros(self.X_train.shape[1]),
             bounds=[(0, C) for _ in self.y_train],
+            factr=1.0,
         )
 
         if svm_type == "linear":
@@ -124,6 +125,18 @@ class SupportVectorMachine:
     def rbf_kernel(
         D1: npt.NDArray[np.float64], D2: npt.NDArray[np.float64], gamma: float
     ):
+        """
+        Implementation of the Gaussian Radial Basis Function kernel
+
+        Args:
+            D1 (npt.NDArray[np.float64]): The first point
+            D2 (npt.NDArray[np.float64]): The second point
+            gamma (float): Defines the width of the kernel, small gamma -> wide
+                kernel, large gamme -> narrow kernel
+
+        Returns:
+            _type_: _description_
+        """
         # Fast method to compute all pair-wise distances. Exploit the fact that
         # |x-y|^2 = |x|^2 + |y|^2 - 2 x^T y, combined with broadcasting
         D1Norms = (D1**2).sum(0)

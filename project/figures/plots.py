@@ -2,6 +2,7 @@ from multiprocessing import Pool, cpu_count
 from typing import Callable, Dict, List
 
 import matplotlib
+from scipy.interpolate import griddata
 
 matplotlib.use("Agg")
 
@@ -138,20 +139,37 @@ def scatter(X, y, **kwargs):
                 progress.update(task, advance=1)
 
 
-def scatter_3d(x, y, z, **kwargs):
+def plot_surface(x, y, z, **kwargs):
     plt.ioff()
     fig = plt.figure(figsize=kwargs.get("figsize", FIG_SIZE))
 
+    # Smooth out the surface
+    X, Y = np.meshgrid(
+        np.linspace(min(x), max(x), 100), np.linspace(min(y), max(y), 100)
+    )
+    Z = griddata((x, y), z, (X, Y), method="cubic")
+
     ax = fig.add_subplot(111, projection="3d")
 
-    ax.scatter(x, y, z, c=z, cmap="coolwarm", alpha=0.6)
+    # Does not work correctly and it probably never will
+    # https://github.com/matplotlib/matplotlib/issues/209
+    # if "xscale" in kwargs:
+    #     ax.xaxis._set_scale(kwargs.get("xscale", "log"), base=kwargs.get("base", 10)) # type: ignore
+
+    # if "yscale" in kwargs:
+    #     ax.yaxis._set_scale(kwargs.get("yscale", "log"), base=kwargs.get("base", 10)) # type: ignore
+
+    if "xticks" in kwargs:
+        plt.xticks(kwargs.get("xticks"))
+    if "yticks" in kwargs:
+        plt.yticks(kwargs.get("yticks"))
+
+    ax.plot_surface(X, Y, Z, cmap="coolwarm", alpha=0.6)  # type: ignore
+    ax.scatter(x, y, z, c=z, cmap="coolwarm")
 
     ax.set_xlabel(kwargs.get("xlabel", "X"))
     ax.set_ylabel(kwargs.get("ylabel", "Y"))
-
-    ax.set_title(kwargs.get("title", "3D Scatter Plot"))
-
-    plt.tight_layout()
+    ax.set_zlabel(kwargs.get("zlabel", "Z"))  # type: ignore
 
     plt.savefig(f"{IMG_FOLDER}/{kwargs.get('file_name')}.svg")
     plt.close(fig)

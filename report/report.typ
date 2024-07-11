@@ -546,7 +546,7 @@ The table above summarizes the various results, showing that the `Multi Variate 
 
   We notice something interesting, if we isolate our analysis to the application with effective prior equal to `0.1` and only consider the `PCA` setups, we see that the optimal number of dimensions for the `Multivariate Gaussian` model is `6`, with a `minimum DCF` of `0.3015` and an `actual DCF` of `0.3182`, but the other variants prefer working on lower dimensions, even though we saw before that all three perform best without `PCA`. When looking at the `Tied Covariance Gaussian` and the `Naïve Bayes` models we see, respectively, that the optimal number of dimensions is `4`, with a `minimum DCF` of `0.3721` and an `actual DCF` of `0.3879` and the optimal number of dimensions is just `1`, with a `minimum DCF` of `0.3730` and an `actual DCF` of `0.4049`.
 
-  Looking at the `Bayes Error Plots` for the three models in the prior log odds range $(-4, +4)$, we see that the models' rankings are moderately consistent across the applications and are overall well calibrated. We notice that the `Tied Covariance` one is ever so slightly better calibrated than the others and the `Multivariate Gaussian` one is the best performing model overall.
+  Looking at the `Bayes Error Plots` for the three models in the prior log odds range $(-4, +4)$, we see that the models' rankings are moderately consistent across the applications and are overall well calibrated. We notice that the `Tied Covariance` one is ever so slightly better calibrated than the others but worse overall while the `Multivariate Gaussian` one is the best performing model overall.
 ]
 
 
@@ -560,3 +560,18 @@ The table above summarizes the various results, showing that the `Multi Variate 
 
 = Logistic Regression
 
+TODO
+
+#pagebreak(weak: true)
+
+= Support Vector Machines
+
+#pagebreak(weak: true)
+
+= Gaussian Mixture Models
+
+#grid(
+  columns: 2,
+  figure(image("imgs/gmm/full.svg"), caption: [Full Covariance Matrix]),
+  figure(image("imgs/gmm/diagonal.svg"), caption: [Diagonal Covariance Matrix]),
+)

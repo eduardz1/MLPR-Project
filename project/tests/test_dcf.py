@@ -31,7 +31,7 @@ class DCFTest(unittest.TestCase):
                 Cf_p=1,
                 strategy="optimal",
                 normalize=False,
-            )
+            ).item()
         )
 
         dcfs.append(
@@ -43,7 +43,7 @@ class DCFTest(unittest.TestCase):
                 Cf_p=1,
                 strategy="optimal",
                 normalize=False,
-            )
+            ).item()
         )
 
         dcfs.append(
@@ -55,7 +55,7 @@ class DCFTest(unittest.TestCase):
                 Cf_p=1,
                 strategy="optimal",
                 normalize=False,
-            )
+            ).item()
         )
 
         dcfs.append(
@@ -67,7 +67,7 @@ class DCFTest(unittest.TestCase):
                 Cf_p=10,
                 strategy="optimal",
                 normalize=False,
-            )
+            ).item()
         )
 
         expected = [
@@ -90,7 +90,7 @@ class DCFTest(unittest.TestCase):
                 Cf_n=1,
                 Cf_p=1,
                 strategy="optimal",
-            )
+            ).item()
         )
 
         dcfs.append(
@@ -101,7 +101,7 @@ class DCFTest(unittest.TestCase):
                 Cf_n=1,
                 Cf_p=1,
                 strategy="optimal",
-            )
+            ).item()
         )
 
         dcfs.append(
@@ -112,7 +112,7 @@ class DCFTest(unittest.TestCase):
                 Cf_n=10,
                 Cf_p=1,
                 strategy="optimal",
-            )
+            ).item()
         )
 
         dcfs.append(
@@ -123,7 +123,7 @@ class DCFTest(unittest.TestCase):
                 Cf_n=1,
                 Cf_p=10,
                 strategy="optimal",
-            )
+            ).item()
         )
 
         expected = [
@@ -146,7 +146,7 @@ class DCFTest(unittest.TestCase):
                 Cf_n=1,
                 Cf_p=1,
                 strategy="min",
-            )
+            ).item()
         )
 
         dcfs.append(
@@ -157,7 +157,7 @@ class DCFTest(unittest.TestCase):
                 Cf_n=1,
                 Cf_p=1,
                 strategy="min",
-            )
+            ).item()
         )
 
         dcfs.append(
@@ -168,7 +168,7 @@ class DCFTest(unittest.TestCase):
                 Cf_n=10,
                 Cf_p=1,
                 strategy="min",
-            )
+            ).item()
         )
 
         dcfs.append(
@@ -179,7 +179,7 @@ class DCFTest(unittest.TestCase):
                 Cf_n=1,
                 Cf_p=10,
                 strategy="min",
-            )
+            ).item()
         )
 
         expected = [

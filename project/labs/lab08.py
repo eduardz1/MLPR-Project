@@ -41,9 +41,9 @@ target prior when we build the model)?
 Repeat the analysis with the quadratic logistic regression model (again, full
 dataset only). Expand the features, train and evaluate the models (you can focus
 on the standard, non prior-weighted model only, as the results you would obtain
-are similar for the two models), again considering different values for lambda. What
-do you observe? In this case is regularization effective? How does it affect the
-two metrics?
+are similar for the two models), again considering different values for lambda.
+What do you observe? In this case is regularization effective? How does it
+affect the two metrics?
 
 The non-regularized model is invariant to affine transformations of the data.
 However, once we introduce a regularization term affine transformations of the
@@ -119,8 +119,8 @@ def compute_logistic_regression(
     for l in lambdas:
         f = cl.train(l, prior, prior_weighted)
 
-        min_dcf = dcf(cl.llr, y_val, prior, "min")
-        act_dcf = dcf(cl.llr, y_val, prior, "optimal")
+        min_dcf = dcf(cl.llr, y_val, prior, "min").item()
+        act_dcf = dcf(cl.llr, y_val, prior, "optimal").item()
 
         applications["lambda"].append(l)
         applications["J(w*,b*)"].append(f)
