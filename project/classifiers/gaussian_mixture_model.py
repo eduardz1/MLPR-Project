@@ -27,11 +27,6 @@ class GaussianMixtureModel(Classifier):
     def __init__(self) -> None:
         self.gmms = [SingleGMM() for _ in [0, 1]]
 
-    def scores(self, X):
-        self._S = np.array([gmm.scores(X) for gmm in self.gmms])
-
-        return self._S
-
     @property
     def llr(self):
         """
@@ -42,6 +37,21 @@ class GaussianMixtureModel(Classifier):
             raise ValueError("Scores have not been computed yet.")
 
         return self._S[1] - self._S[0]
+
+    @staticmethod
+    def from_json(data):
+        decoded = (
+            json.load(data) if isinstance(data, TextIOWrapper) else json.loads(data)
+        )
+
+        gmms = []
+        for _, gmm in decoded["gmms"].items():
+            gmms.append(SingleGMM.from_json(gmm))
+
+        gmm = GaussianMixtureModel.__new__(GaussianMixtureModel)
+        gmm.gmms = gmms
+
+        return gmm
 
     def fit(
         self,
@@ -86,6 +96,11 @@ class GaussianMixtureModel(Classifier):
 
         return self
 
+    def scores(self, X):
+        self._S = np.array([gmm.scores(X) for gmm in self.gmms])
+
+        return self._S
+
     def to_json(self, fp=None):
         if not self._fitted:
             raise ValueError("Classifier has not been fitted yet.")
@@ -96,21 +111,6 @@ class GaussianMixtureModel(Classifier):
             return data
 
         json.dump(data, fp)
-
-    @staticmethod
-    def from_json(data):
-        decoded = (
-            json.load(data) if isinstance(data, TextIOWrapper) else json.loads(data)
-        )
-
-        gmms = []
-        for _, gmm in decoded["gmms"].items():
-            gmms.append(SingleGMM.from_json(gmm))
-
-        gmm = GaussianMixtureModel.__new__(GaussianMixtureModel)
-        gmm.gmms = gmms
-
-        return gmm
 
 
 @dataclass
@@ -131,12 +131,50 @@ class SingleGMM(Classifier):
         default_factory=list
     )
 
-    def scores(self, X):
-        return log_pdf_gmm(X, self.params)
-
     @property
     def llr(self):
         raise NotImplementedError
+
+    @staticmethod
+    def from_json(data: dict) -> "SingleGMM":
+        """
+        Deserializes the Single Gaussian Mixture Model from a JSON like dictionary
+
+        Args:
+            data (dict): The JSON like dictionary to deserialize
+
+        Returns:
+            SingleGMM: The deserialized Single Gaussian Mixture Model
+        """
+        gmm = SingleGMM.__new__(SingleGMM)
+        gmm._type = data["type"]
+        gmm.params = [
+            (
+                np.array(d["w"]),
+                np.array(d["mu"]),
+                np.array(d["C"]) if gmm._type == "full" else np.diag(np.array(d["C"])),
+            )
+            for d in data["params"]
+        ]
+        return gmm
+
+    @staticmethod
+    def smooth_covariance_matrix(C: npt.NDArray, psi: float):
+        """
+        Smooths the covariance matrix by setting the eigenvalues below a
+        certain threshold to that threshold value
+
+        Args:
+            C (npt.NDArray): The covariance matrix
+            psi (float): The minimum eigenvalue
+
+        Returns:
+            npt.NDArray: The smoothed covariance matrix
+        """
+
+        U, s, _ = np.linalg.svd(C)
+        s[s < psi] = psi
+        return U @ (vcol(s) * U.T)
 
     def fit(
         self,
@@ -194,6 +232,28 @@ class SingleGMM(Classifier):
         self._fitted = True
 
         return self
+
+    def scores(self, X):
+        return log_pdf_gmm(X, self.params)
+
+    def to_json(self) -> dict:
+        """
+        Serializes the Single Gaussian Mixture Model to a JSON like dictionary
+
+        Returns:
+            dict: The JSON like dictionary
+        """
+        return {
+            "type": self._type,
+            "params": [
+                {
+                    "w": w.tolist(),
+                    "mu": mu.tolist(),
+                    "C": C.tolist() if self._type == "full" else np.diag(C).tolist(),
+                }
+                for w, mu, C in self.params
+            ],
+        }
 
     def __train(
         self, X: npt.NDArray, cov_type: str, eps_ll_avg: float, psi_eig: float | None
@@ -275,63 +335,3 @@ class SingleGMM(Classifier):
             new_params.append((0.5 * w, mu + displacement, C))
 
         self.params = new_params
-
-    @staticmethod
-    def smooth_covariance_matrix(C: npt.NDArray, psi: float):
-        """
-        Smooths the covariance matrix by setting the eigenvalues below a
-        certain threshold to that threshold value
-
-        Args:
-            C (npt.NDArray): The covariance matrix
-            psi (float): The minimum eigenvalue
-
-        Returns:
-            npt.NDArray: The smoothed covariance matrix
-        """
-
-        U, s, _ = np.linalg.svd(C)
-        s[s < psi] = psi
-        return U @ (vcol(s) * U.T)
-
-    def to_json(self) -> dict:
-        """
-        Serializes the Single Gaussian Mixture Model to a JSON like dictionary
-
-        Returns:
-            dict: The JSON like dictionary
-        """
-        return {
-            "type": self._type,
-            "params": [
-                {
-                    "w": w.tolist(),
-                    "mu": mu.tolist(),
-                    "C": C.tolist() if self._type == "full" else np.diag(C).tolist(),
-                }
-                for w, mu, C in self.params
-            ],
-        }
-
-    @staticmethod
-    def from_json(data: dict) -> "SingleGMM":
-        """
-        Deserializes the Single Gaussian Mixture Model from a JSON like dictionary
-
-        Args:
-            data (dict): The JSON like dictionary to deserialize
-
-        Returns:
-            SingleGMM: The deserialized Single Gaussian Mixture Model
-        """
-        gmm = SingleGMM.__new__(SingleGMM)
-        gmm._type = data["type"]
-        gmm.params = [
-            (
-                np.array(d["w"]),
-                np.array(d["mu"]),
-                np.array(d["C"]) if gmm._type == "full" else np.diag(np.array(d["C"])),
-            )
-            for d in data["params"]
-        ]
-        return gmm

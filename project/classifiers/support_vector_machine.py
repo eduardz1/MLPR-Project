@@ -43,6 +43,114 @@ class SupportVectorMachine(Classifier):
     ) -> None:
         self._type = type
 
+    @property
+    def llr(self) -> npt.NDArray:
+        if not hasattr(self, "_S"):
+            raise ValueError("Scores have not been computed yet.")
+
+        return self._S
+
+    @staticmethod
+    def from_json(data):
+        decoded = (
+            json.load(data) if isinstance(data, TextIOWrapper) else json.loads(data)
+        )
+
+        cl = SupportVectorMachine(decoded["type"])
+        cl._C = decoded["C"]
+        cl._K = decoded["K"]
+
+        if cl._type == "linear":
+            cl._weights = np.array(decoded["weights"])
+            cl._bias = decoded["bias"]
+        elif cl._type == "rbf_kernel":
+            cl._alpha_star = np.array(decoded["alpha_star"])
+            cl._xi = decoded["xi"]
+            cl._gamma = decoded["gamma"]
+        else:
+            cl._alpha_star = np.array(decoded["alpha_star"])
+            cl._degree = decoded["degree"]
+            cl._c = decoded["c"]
+            cl._xi = decoded["xi"]
+
+        cl._init_kernel_func()
+        cl._fitted = True
+
+        return cl
+
+    @staticmethod
+    @njit(cache=True)
+    def poly_kernel(
+        D1: npt.NDArray[np.float64],
+        D2: npt.NDArray[np.float64],
+        degree: float,
+        c: float,
+        xi: float,
+    ):
+        """
+        Implementation of the polynomial kernel
+
+        Args:
+            D1 (npt.NDArray[np.float64]): The first point
+            D2 (npt.NDArray[np.float64]): The second point
+            degree (float): The degree of the polynomial
+            c (float): The coefficient of the polynomial
+            xi (float): The bias term
+
+        Returns:
+            npt.NDArray[np.float64]: The kernel matrix
+        """
+        return (np.dot(D1.T, D2) + c) ** degree + xi
+
+    @staticmethod
+    @njit(cache=True)
+    def rbf_kernel(
+        D1: npt.NDArray[np.float64],
+        D2: npt.NDArray[np.float64],
+        gamma: float,
+        xi: float,
+    ):
+        """
+        Implementation of the Gaussian Radial Basis Function kernel
+
+        Args:
+            D1 (npt.NDArray[np.float64]): The first point
+            D2 (npt.NDArray[np.float64]): The second point
+            gamma (float): Defines the width of the kernel, small gamma -> wide
+                kernel, large gamma -> narrow kernel
+            xi (float): The bias term
+
+        Returns:
+            npt.NDArray[np.float64]: The kernel matrix
+        """
+        # Fast method to compute all pair-wise distances. Exploit the fact that
+        # |x-y|^2 = |x|^2 + |y|^2 - 2 x^T y, combined with broadcasting
+        D1Norms = (D1**2).sum(0)
+        D2Norms = (D2**2).sum(0)
+        Z = vcol(D1Norms) + vrow(D2Norms) - 2 * np.dot(D1.T, D2)
+        return np.exp(-gamma * Z) + xi
+
+    @staticmethod
+    @njit(cache=True)
+    def __objective(
+        H: npt.NDArray[np.float64], alpha: npt.NDArray[np.float64]
+    ) -> tuple[float, npt.NDArray[np.float64]]:
+        """
+        Objective function for the SVM optimization problem
+
+        Args:
+            H (npt.NDArray[np.float64]): The Hessian matrix
+            alpha (npt.NDArray[np.float64]): The alpha values
+
+        Returns:
+            tuple[float, npt.NDArray[np.float64]]: The loss and the gradient
+        """
+        Ha = H @ vcol(alpha)
+        loss = 0.5 * (vrow(alpha) @ Ha).ravel() - alpha.sum()
+        grad = Ha.ravel() - np.ones(alpha.size)
+
+        return loss, grad
+
     def fit(
         self,
         X: npt.NDArray[np.float64],
@@ -116,24 +224,6 @@ class SupportVectorMachine(Classifier):
 
         return self
 
-    def _init_kernel_func(self):
-        self._kernel_func = (
-            (
-                partial(self.poly_kernel, degree=self._degree, c=self._c, xi=self._xi)
-                if self._type == "poly_kernel"
-                else partial(self.rbf_kernel, gamma=self._gamma, xi=self._xi)
-            )
-            if self._type != "linear"
-            else None
-        )
-
-    @property
-    def llr(self) -> npt.NDArray:
-        if not hasattr(self, "_S"):
-            raise ValueError("Scores have not been computed yet.")
-
-        return self._S
-
     def scores(
         self,
         X_val: npt.NDArray[np.float64],
@@ -162,79 +252,6 @@ class SupportVectorMachine(Classifier):
             self._S = H.sum(0)
 
         return self._S
-
-    @staticmethod
-    @njit(cache=True)
-    def __objective(
-        H: npt.NDArray[np.float64], alpha: npt.NDArray[np.float64]
-    ) -> tuple[float, npt.NDArray[np.float64]]:
-        """
-        Objective function for the SVM optimization problem
-
-        Args:
-            H (npt.NDArray[np.float64]): The Hessian matrix
-            alpha (npt.NDArray[np.float64]): The alpha values
-
-        Returns:
-            tuple[float, npt.NDArray[np.float64]]: The loss and the gradient
-        """
-        Ha = H @ vcol(alpha)
-        loss = 0.5 * (vrow(alpha) @ Ha).ravel() - alpha.sum()
-        grad = Ha.ravel() - np.ones(alpha.size)
-
-        return loss, grad
-
-    @staticmethod
-    @njit(cache=True)
-    def poly_kernel(
-        D1: npt.NDArray[np.float64],
-        D2: npt.NDArray[np.float64],
-        degree: float,
-        c: float,
-        xi: float,
-    ):
-        """
-        Implementation of the polynomial kernel
-
-        Args:
-            D1 (npt.NDArray[np.float64]): The first point
-            D2 (npt.NDArray[np.float64]): The second point
-            degree (float): The degree of the polynomial
-            c (float): The coefficient of the polynomial
-            xi (float): The bias term
-
-        Returns:
-            npt.NDArray[np.float64]: The kernel matrix
-        """
-        return (np.dot(D1.T, D2) + c) ** degree + xi
-
-    @staticmethod
-    @njit(cache=True)
-    def rbf_kernel(
-        D1: npt.NDArray[np.float64],
-        D2: npt.NDArray[np.float64],
-        gamma: float,
-        xi: float,
-    ):
-        """
-        Implementation of the Gaussian Radial Basis Function kernel
-
-        Args:
-            D1 (npt.NDArray[np.float64]): The first point
-            D2 (npt.NDArray[np.float64]): The second point
-            gamma (float): Defines the width of the kernel, small gamma -> wide
-                kernel, large gamma -> narrow kernel
-            xi (float): The bias term
-
-        Returns:
-            npt.NDArray[np.float64]: The kernel matrix
-        """
-        # Fast method to compute all pair-wise distances. Exploit the fact that
-        # |x-y|^2 = |x|^2 + |y|^2 - 2 x^T y, combined with broadcasting
-        D1Norms = (D1**2).sum(0)
-        D2Norms = (D2**2).sum(0)
-        Z = vcol(D1Norms) + vrow(D2Norms) - 2 * np.dot(D1.T, D2)
-        return np.exp(-gamma * Z) + xi
 
     def to_json(self, fp=None):
         params = (
@@ -275,30 +292,13 @@ class SupportVectorMachine(Classifier):
 
         json.dump(data, fp)
 
-    @staticmethod
-    def from_json(data):
-        decoded = (
-            json.load(data) if isinstance(data, TextIOWrapper) else json.loads(data)
+    def _init_kernel_func(self):
+        self._kernel_func = (
+            (
+                partial(self.poly_kernel, degree=self._degree, c=self._c, xi=self._xi)
+                if self._type == "poly_kernel"
+                else partial(self.rbf_kernel, gamma=self._gamma, xi=self._xi)
+            )
+            if self._type != "linear"
+            else None
         )
-
-        cl = SupportVectorMachine(decoded["type"])
-        cl._C = decoded["C"]
-        cl._K = decoded["K"]
-
-        if cl._type == "linear":
-            cl._weights = np.array(decoded["weights"])
-            cl._bias = decoded["bias"]
-        elif cl._type == "rbf_kernel":
-            cl._alpha_star = np.array(decoded["alpha_star"])
-            cl._xi = decoded["xi"]
-            cl._gamma = decoded["gamma"]
-        else:
-            cl._alpha_star = np.array(decoded["alpha_star"])
-            cl._degree = decoded["degree"]
-            cl._c = decoded["c"]
-            cl._xi = decoded["xi"]
-
-        cl._init_kernel_func()
-        cl._fitted = True
-
-        return cl

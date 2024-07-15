@@ -40,42 +40,6 @@ class LogisticRegression(Classifier):
         """
         self._quadratic = quadratic
 
-    def scores(self, X):
-        if not self._fitted:
-            raise ValueError("Classifier has not been fitted yet.")
-
-        if self._quadratic:
-            X = quadratic_feature_expansion(X)
-
-        self._S = self._weights.T @ X + self._bias
-        return self._S
-
-    def predict(
-        self, X: npt.NDArray[np.float64], y: npt.ArrayLike | None = None
-    ) -> npt.ArrayLike:
-        """
-        Predict the labels of the validation set.
-
-        Args:
-            X (npt.NDArray[np.float64]): The validation set.
-            y (npt.ArrayLike, optional): The true labels of the validation set, defaults to None.
-
-        Returns:
-            npt.ArrayLike: The predicted labels of the validation set.
-        """
-        if not self._fitted:
-            raise ValueError("Classifier has not been fitted yet.")
-
-        self.scores(X)
-
-        predictions = self._S > 0
-
-        if y is not None:
-            self.accuracy = np.mean(predictions == y) * 100
-            self.error_rate = 100 - self.accuracy
-
-        return predictions
-
     @property
     def llr(self):
         """
@@ -84,36 +48,19 @@ class LogisticRegression(Classifier):
 
         return self._S - np.log(self._prior / (1 - self._prior))
 
-    def fit(
-        self, X, y, *, l: float, prior: float | None = None  # noqa: E741
-    ) -> "LogisticRegression":
-        """
-        Fit the logistic regression classifier using the training data and the
-        specified hyperparameters.
+    @staticmethod
+    def from_json(data):
+        decoded = (
+            json.load(data) if isinstance(data, TextIOWrapper) else json.loads(data)
+        )
 
-        Args:
-            l (float): the regularization hyperparameter
-            prior (float, optional): the prior probability of the positive class,
-                if None, the standard logistic regression objective is used,
-                otherwise the prior-weighted logistic regression objective is used
+        cl = LogisticRegression(decoded["quadratic"])
+        cl._bias = decoded["bias"]
+        cl._prior = decoded["prior"]
+        cl._weights = np.array(decoded["weights"])
+        cl._fitted = True
 
-        Returns:
-            float: the value of the objective function at the optimal point
-        """
-
-        if self._quadratic:
-            X = quadratic_feature_expansion(X)
-
-        log_reg = partial(self.objective, DTR=X, LTR=y, l=l, prior=prior)
-
-        x, self._f, _ = opt.fmin_l_bfgs_b(log_reg, np.zeros(X.shape[0] + 1))
-
-        self._weights, self._bias = x[:-1], x[-1]
-
-        self._fitted = True
-        self._prior = prior or np.mean(y)
-
-        return self
+        return cl
 
     @staticmethod
     @njit(cache=True)
@@ -184,6 +131,80 @@ class LogisticRegression(Classifier):
 
         return f, np.hstack((GW, Gb))
 
+    def fit(
+        self,
+        X: npt.NDArray[np.float64],
+        y: npt.NDArray[np.int64],
+        *,
+        l: float,  # noqa: E741
+        prior: float | None = None,
+    ) -> "LogisticRegression":
+        """
+        Fit the logistic regression classifier using the training data and the
+        specified hyperparameters.
+
+        Args:
+            X (npt.NDArray[np.float64]): the training data
+            y (npt.NDArray[np.int64]): the training labels
+            l (float): the regularization hyperparameter
+            prior (float, optional): the prior probability of the positive class,
+                if None, the standard logistic regression objective is used,
+                otherwise the prior-weighted logistic regression objective is used
+
+        Returns:
+            float: the value of the objective function at the optimal point
+        """
+
+        if self._quadratic:
+            X = quadratic_feature_expansion(X)
+
+        log_reg = partial(self.objective, DTR=X, LTR=y, l=l, prior=prior)
+
+        x, self._f, _ = opt.fmin_l_bfgs_b(log_reg, np.zeros(X.shape[0] + 1))
+
+        self._weights, self._bias = x[:-1], x[-1]
+
+        self._fitted = True
+        self._prior = prior or np.mean(y)
+
+        return self
+
+    def predict(
+        self, X: npt.NDArray[np.float64], y: npt.ArrayLike | None = None
+    ) -> npt.ArrayLike:
+        """
+        Predict the labels of the validation set.
+
+        Args:
+            X (npt.NDArray[np.float64]): The validation set.
+            y (npt.ArrayLike, optional): The true labels of the validation set, defaults to None.
+
+        Returns:
+            npt.ArrayLike: The predicted labels of the validation set.
+        """
+        if not self._fitted:
+            raise ValueError("Classifier has not been fitted yet.")
+
+        self.scores(X)
+
+        predictions = self._S > 0
+
+        if y is not None:
+            self.accuracy = np.mean(predictions == y) * 100
+            self.error_rate = 100 - self.accuracy
+
+        return predictions
+
+    def scores(self, X):
+        if not self._fitted:
+            raise ValueError("Classifier has not been fitted yet.")
+
+        if self._quadratic:
+            X = quadratic_feature_expansion(X)
+
+        self._S = self._weights.T @ X + self._bias
+        return self._S
+
     def to_json(self, fp=None):
         if not self._fitted:
             raise ValueError("Classifier has not been fitted yet.")
@@ -199,17 +220,3 @@ class LogisticRegression(Classifier):
             return data
 
         json.dump(data, fp)
-
-    @staticmethod
-    def from_json(data):
-        decoded = (
-            json.load(data) if isinstance(data, TextIOWrapper) else json.loads(data)
-        )
-
-        cl = LogisticRegression(decoded["quadratic"])
-        cl._bias = decoded["bias"]
-        cl._prior = decoded["prior"]
-        cl._weights = np.array(decoded["weights"])
-        cl._fitted = True
-
-        return cl

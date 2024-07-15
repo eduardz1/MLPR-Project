@@ -35,26 +35,6 @@ class BinaryGaussian(Classifier):
         self._type = classifier
         self._fitted = False
 
-    def scores(self, X):
-        if not self._fitted:
-            raise ValueError("Classifier has not been fitted yet.")
-
-        if self._slicer:
-            X = X[:, self._slicer]
-
-        if self._pca_dims:
-            X = pca(X, self._pca_dims)[1]
-
-        X = X.T
-
-        self._S = np.zeros((2, X.shape[1]))
-        for i in [0, 1]:
-            mu = self.mu[i]
-            C = self.C[i]
-            self._S[i, :] = log_pdf_gaussian(X, vcol(mu), C)
-
-        return self._S
-
     @property
     def llr(self):
         """
@@ -64,6 +44,30 @@ class BinaryGaussian(Classifier):
             raise ValueError("Scores have not been computed yet.")
 
         return self._S[1] - self._S[0]
+
+    @staticmethod
+    def from_json(data):
+        decoded = (
+            json.load(data) if isinstance(data, TextIOWrapper) else json.loads(data)
+        )
+
+        cl = BinaryGaussian(decoded["type"])
+        cl._type = decoded["type"]
+        cl.mu = decoded["mu"]
+        cl.C = (
+            decoded["C"]
+            if cl._type == "multivariate"
+            else (
+                [np.diag(C) for C in decoded["C"]]
+                if cl._type == "naive"
+                else [decoded["C"], decoded["C"]]
+            )
+        )
+        cl._pca_dims = decoded["pca_dims"]
+        cl._slicer = decoded["slicer"]
+        cl._fitted = True
+
+        return cl
 
     def fit(
         self,
@@ -156,29 +160,25 @@ class BinaryGaussian(Classifier):
 
         return predictions
 
-    @staticmethod
-    def from_json(data):
-        decoded = (
-            json.load(data) if isinstance(data, TextIOWrapper) else json.loads(data)
-        )
+    def scores(self, X):
+        if not self._fitted:
+            raise ValueError("Classifier has not been fitted yet.")
 
-        cl = BinaryGaussian(decoded["type"])
-        cl._type = decoded["type"]
-        cl.mu = decoded["mu"]
-        cl.C = (
-            decoded["C"]
-            if cl._type == "multivariate"
-            else (
-                [np.diag(C) for C in decoded["C"]]
-                if cl._type == "naive"
-                else [decoded["C"], decoded["C"]]
-            )
-        )
-        cl._pca_dims = decoded["pca_dims"]
-        cl._slicer = decoded["slicer"]
-        cl._fitted = True
+        if self._slicer:
+            X = X[:, self._slicer]
 
-        return cl
+        if self._pca_dims:
+            X = pca(X, self._pca_dims)[1]
+
+        X = X.T
+
+        self._S = np.zeros((2, X.shape[1]))
+        for i in [0, 1]:
+            mu = self.mu[i]
+            C = self.C[i]
+            self._S[i, :] = log_pdf_gaussian(X, vcol(mu), C)
+
+        return self._S
 
     def to_json(self, fp=None):
         if not self._fitted:

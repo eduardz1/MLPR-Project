@@ -6,6 +6,25 @@ import numpy.typing as npt
 
 
 class Classifier(metaclass=abc.ABCMeta):
+    @property
+    @abc.abstractmethod
+    def llr(self) -> npt.NDArray[np.float64]:
+        pass
+
+    @staticmethod
+    @abc.abstractmethod
+    def from_json(data: str | bytes | bytearray | TextIOWrapper) -> "Classifier":
+        """
+        Load a classifier from a JSON string.
+
+        Args:
+            data (str | bytes | bytearray): JSON string containing the classifier data.
+
+        Returns:
+            Classifier: The loaded classifier.
+        """
+        pass
+
     @abc.abstractmethod
     def fit(self, X: npt.NDArray[np.float64], y: npt.ArrayLike, *args) -> "Classifier":
         pass
@@ -26,11 +45,6 @@ class Classifier(metaclass=abc.ABCMeta):
         """
         pass
 
-    @property
-    @abc.abstractmethod
-    def llr(self) -> npt.NDArray[np.float64]:
-        pass
-
     @abc.abstractmethod
     def to_json(self, fp=None) -> None | dict:
         """
@@ -45,19 +59,5 @@ class Classifier(metaclass=abc.ABCMeta):
 
         Returns:
             None | dict: The JSON data of the classifier.
-        """
-        pass
-
-    @staticmethod
-    @abc.abstractmethod
-    def from_json(data: str | bytes | bytearray | TextIOWrapper) -> "Classifier":
-        """
-        Load a classifier from a JSON string.
-
-        Args:
-            data (str | bytes | bytearray): JSON string containing the classifier data.
-
-        Returns:
-            Classifier: The loaded classifier.
         """
         pass
