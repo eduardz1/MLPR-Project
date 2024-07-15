@@ -1,5 +1,6 @@
-from dataclasses import dataclass
+import json
 from functools import partial
+from io import TextIOWrapper
 from typing import Literal
 
 import numpy as np
@@ -7,21 +8,33 @@ import numpy.typing as npt
 import scipy.optimize as opt
 from numba import njit
 
+from project.classifiers.classifier import Classifier
 from project.funcs.base import vcol, vrow
 
 
-@dataclass
-class SupportVectorMachine:
-    X_train: npt.NDArray
-    y_train: npt.NDArray
-    X_val: npt.NDArray
-    y_val: npt.NDArray
-
-    def train(
+class SupportVectorMachine(Classifier):
+    def __init__(
         self,
         svm_type: (
             Literal["linear"] | Literal["poly_kernel"] | Literal["rbf_kernel"]
         ) = "linear",
+    ) -> None:
+        """
+        Initializes the support vector machine classifier.
+
+        Args:
+            svm_type (
+                Literal[linear] | Literal[poly_kernel] | Literal[rbf_kernel],
+                optional,
+            ): the type of SVM to use or kernel function to use for the kernel
+                type. Defaults to "linear".
+        """
+        self._svm_type = svm_type
+
+    def fit(
+        self,
+        X: npt.NDArray[np.float64],
+        y: npt.NDArray,
         *,
         C: float = 0,
         K: int = 1,
@@ -29,18 +42,16 @@ class SupportVectorMachine:
         degree: int = 1,
         c: float = 1,
         gamma: float = 1,
-    ) -> None:
+    ) -> "SupportVectorMachine":
         """
         Train the support vector machine classifier using the training data and the
         specified hyperparameters.
 
         Args:
-            C (float): the regularization hyperparameter
-            svm_type (
-                Literal[linear] | Literal[poly_kernel] | Literal[rbf_kernel],
-                optional,
-            ): the type of SVM to use or kernel function to use for the kernel
-                type. Defaults to "linear".
+            X (npt.NDArray[np.float64]): the training data.
+            y (npt.NDArray): the training labels.
+
+            C (float): the regularization hyperparameter.
             K (int, optional): the kernel parameter. Defaults to 1.
             xi (float, optional): the xi parameter, acts as a bias term for the
                 non-linear SVM. Defaults to 1.
@@ -50,10 +61,10 @@ class SupportVectorMachine:
                 to 1.
             gamma (float, optional): the gamma parameter for the RBF kernel. Defaults
                 to 1.
-        """
 
-        self._svm_type = svm_type
-        self._init_kernel_func()
+        Returns:
+            SupportVectorMachine: the fitted classifier.
+        """
 
         # Hyperparameters
         self._C = C
@@ -63,29 +74,35 @@ class SupportVectorMachine:
         self._c = c
         self._gamma = gamma
 
-        self.__ZTR = self.y_train * 2.0 - 1.0  # Convert labels to +1/-1
+        self._init_kernel_func()
 
-        if svm_type == "linear":
-            DTR_EXT = np.vstack([self.X_train, np.ones((1, self.X_train.shape[1])) * K])
+        self.__ZTR = y * 2.0 - 1.0  # Convert labels to +1/-1
+
+        if self._svm_type == "linear":
+            DTR_EXT = np.vstack([X, np.ones((1, X.shape[1])) * K])
             zizj = np.dot(DTR_EXT.T, DTR_EXT)
         else:
-            zizj = self._kernel_func(self.X_train, self.X_train)  # type: ignore
+            zizj = self._kernel_func(X, X)  # type: ignore
 
         H = zizj * vcol(self.__ZTR) * vrow(self.__ZTR)
 
         self._alpha_star, *_ = opt.fmin_l_bfgs_b(
             partial(self.__objective, H),
-            np.zeros(self.X_train.shape[1]),
-            bounds=[(0, C) for _ in self.y_train],
+            np.zeros(X.shape[1]),
+            bounds=[(0, C) for _ in y],
             factr=1.0,
         )
 
-        if svm_type == "linear":
+        if self._svm_type == "linear":
             # Compute primal solution for extended data matrix
             w_hat = (vrow(self._alpha_star) * vrow(self.__ZTR) * DTR_EXT).sum(1)
 
             # b must be rescaled in case K != 1, since we want to compute w'x + b * K
             self._weights, self._bias = (w_hat[:-1], w_hat[-1] * K)
+
+        self._fitted = True
+
+        return self
 
     def _init_kernel_func(self):
         self._kernel_func = (
@@ -100,21 +117,32 @@ class SupportVectorMachine:
 
     @property
     def llr(self) -> npt.NDArray:
-        return self.scores
+        if not hasattr(self, "_S"):
+            raise ValueError("Scores have not been computed yet.")
 
-    @property
-    def scores(self) -> npt.NDArray:
-        """
-        LLR-like measure of the classifier (NOTE: not a real log-likelihood ratio)
-        """
+        return self._S
+
+    def scores(
+        self,
+        X_val: npt.NDArray[np.float64],
+        X_train: npt.NDArray[np.float64] | None = None,
+    ) -> npt.NDArray[np.float64]:
+        if not self._fitted:
+            raise ValueError("Classifier has not been fitted yet.")
+
         if self._svm_type == "linear":
-            return (vrow(self._weights) @ self.X_val + self._bias).ravel()
+            self._S = (vrow(self._weights) @ X_val + self._bias).ravel()
         else:
-            zizj = self._kernel_func(self.X_train, self.X_val)  # type: ignore
+            if X_train is None:
+                raise ValueError("Training data must be provided for non-linear SVM.")
+
+            zizj = self._kernel_func(X_train, X_val)  # type: ignore
 
             H = vcol(self._alpha_star) * vcol(self.__ZTR) * zizj
 
-            return H.sum(0)
+            self._S = H.sum(0)
+
+        return self._S
 
     @staticmethod
     @njit(cache=True)
@@ -176,7 +204,7 @@ class SupportVectorMachine:
         Z = vcol(D1Norms) + vrow(D2Norms) - 2 * np.dot(D1.T, D2)
         return np.exp(-gamma * Z) + xi
 
-    def to_json(self) -> dict:
+    def to_json(self, fp=None):
         params = (
             {
                 "weights": self._weights.tolist(),
@@ -203,7 +231,7 @@ class SupportVectorMachine:
             )
         )
 
-        return {
+        data = {
             "svm_type": self._svm_type,
             "C": self._C,
             "K": self._K,
@@ -211,27 +239,36 @@ class SupportVectorMachine:
             **params,
         }
 
+        if fp is None:
+            return data
+
+        json.dump(data, fp)
+
     @staticmethod
-    def from_json(data: dict) -> "SupportVectorMachine":
-        svm = SupportVectorMachine.__new__(SupportVectorMachine)
-        svm._svm_type = data["svm_type"]
-        svm._C = data["C"]
-        svm._K = data["K"]
-        svm.__ZTR = np.array(data["ZTR"])
+    def from_json(data):
+        decoded = (
+            json.load(data) if isinstance(data, TextIOWrapper) else json.loads(data)
+        )
 
-        if svm._svm_type == "linear":
-            svm._weights = np.array(data["weights"])
-            svm._bias = data["bias"]
-        elif svm._svm_type == "rbf_kernel":
-            svm._alpha_star = np.array(data["alpha_star"])
-            svm._xi = data["xi"]
-            svm._gamma = data["gamma"]
+        cl = SupportVectorMachine(decoded["svm_type"])
+        cl._C = decoded["C"]
+        cl._K = decoded["K"]
+        cl.__ZTR = np.array(decoded["ZTR"])
+
+        if cl._svm_type == "linear":
+            cl._weights = np.array(decoded["weights"])
+            cl._bias = decoded["bias"]
+        elif cl._svm_type == "rbf_kernel":
+            cl._alpha_star = np.array(decoded["alpha_star"])
+            cl._xi = decoded["xi"]
+            cl._gamma = decoded["gamma"]
         else:
-            svm._alpha_star = np.array(data["alpha_star"])
-            svm._degree = data["degree"]
-            svm._c = data["c"]
-            svm._xi = data["xi"]
+            cl._alpha_star = np.array(decoded["alpha_star"])
+            cl._degree = decoded["degree"]
+            cl._c = decoded["c"]
+            cl._xi = decoded["xi"]
 
-        svm._init_kernel_func()
+        cl._init_kernel_func()
+        cl._fitted = True
 
-        return svm
+        return cl

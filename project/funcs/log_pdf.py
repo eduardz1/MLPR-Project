@@ -3,7 +3,7 @@ import numpy.typing as npt
 import scipy.special as sp
 from numba import njit
 
-from project.funcs.base import atleast_1d, atleast_2d
+from project.funcs.base import atleast_2d
 
 
 @njit(cache=True)
@@ -30,7 +30,7 @@ def log_pdf_gaussian(X: npt.NDArray, mu: npt.NDArray, C: npt.NDArray) -> npt.NDA
         NDArray: [N x 1] logarithm of the multivariate gaussian density function
     """
     X = atleast_2d(X)
-    mu = atleast_1d(mu)
+    mu = atleast_2d(mu)
     C = atleast_2d(C)
 
     _check_params(X, mu, C)

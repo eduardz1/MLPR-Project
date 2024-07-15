@@ -110,17 +110,19 @@ def compute_logistic_regression(
         X_train -= X_train.mean(axis=1, keepdims=True)
         X_val -= X_val.mean(axis=1, keepdims=True)
 
-    cl = LogisticRegression(X_train, y_train, X_val, y_val, quadratic)
+    cl = LogisticRegression(quadratic)
 
     for l in lambdas:
-        f = cl.train(l, prior if prior_weighted else None)
+        cl.fit(X_train, y_train, l=l, prior=prior if prior_weighted else None).predict(
+            X_val, y_val
+        )
 
         min_dcf = dcf(cl.llr, y_val, prior, "min").item()
         act_dcf = dcf(cl.llr, y_val, prior, "optimal").item()
 
         applications["lambda"].append(l)
-        applications["J(w*,b*)"].append(f)
-        applications["Error rate"].append(cl.error_rate)
+        applications["J(w*,b*)"].append(cl._f)
+        applications["Error rate"].append(f"{cl.error_rate:.2f}%")
         applications["minDCF"].append(min_dcf)
         applications["actDCF"].append(act_dcf)
 
@@ -313,11 +315,11 @@ def lab08(DATA: str):
         ylabel="DCF",
     )
 
-    with open("scores/log_reg.npy", "wb") as f:
+    with open("models/scores/log_reg.npy", "wb") as f:
         np.save(f, arr=best_log_reg_config["scores"])
 
     with open("models/log_reg.json", "w") as f:
-        json.dump(best_log_reg_config["model"], f, indent=4)
+        json.dump(best_log_reg_config["model"], f)
 
     best_log_reg_config.pop("scores")
     best_log_reg_config.pop("model")

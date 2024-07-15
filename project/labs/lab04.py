@@ -30,7 +30,6 @@ from project.funcs.log_pdf import log_pdf_gaussian
 
 
 def lab04(DATA: str):
-    np.set_printoptions(precision=3, suppress=True)
     X, y = load_data(DATA)
 
     classes = np.unique(y)

@@ -41,9 +41,10 @@ def kfolds(
         SCAL = np.vstack([scal for scal, _ in SCAL_SVAL])
         SVAL = np.vstack([sval for _, sval in SCAL_SVAL])
 
-        log_reg = LogisticRegression(SCAL, LCAL, SVAL, LVAL)
+        log_reg = LogisticRegression()
 
-        log_reg.train(0, pi)  # We don't need to regularize the lambda term
+        # We don't need to regularize the lambda term
+        log_reg.fit(SCAL, LCAL, l=0, prior=pi).scores(SVAL)
 
         calibrated_scores.append(log_reg.llr)
         calibrated_labels.append(LVAL)

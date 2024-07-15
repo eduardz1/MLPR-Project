@@ -71,7 +71,7 @@
 #subpar.grid(
   figure(image("../imgs/naive_prior_log_odds.svg"), caption: [Naïve Bayes]),
   figure(
-    image("../imgs/multivariate_prior_log_odds.svg"),
+    image("../imgs/mvg_prior_log_odds.svg"),
     caption: [Multivariate Gaussian],
   ),
   figure(

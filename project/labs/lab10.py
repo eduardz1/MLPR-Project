@@ -80,13 +80,16 @@ def lab10(DATA: str):
 
         for components_false in num_components:
             for components_true in num_components:
-                gmm = GaussianMixtureModel(X_train, y_train, X_val, y_val)
-                gmm.train(
+                gmm = GaussianMixtureModel()
+                gmm.fit(
+                    X_train,
+                    y_train,
                     apply_lbg=True,
                     num_components=[components_false, components_true],
                     cov_type="full",
                     psi_eig=0.01,
-                )
+                ).scores(X_val)
+
                 scores = gmm.llr
                 min_dcf = dcf(scores, y_val, PRIOR, "min").item()
 
@@ -103,7 +106,7 @@ def lab10(DATA: str):
                     f"models/_full_T{components_true:02d}_F{components_false:02d}.json",
                     "w",
                 ) as f:
-                    json.dump(gmm.to_json(), f)
+                    gmm.to_json(f)
 
                 if min_dcf < best_gmm_config["min_dcf"]:
                     best_gmm_config.update(
@@ -146,13 +149,16 @@ def lab10(DATA: str):
 
         for components_false in num_components:
             for components_true in num_components:
-                gmm = GaussianMixtureModel(X_train, y_train, X_val, y_val)
-                gmm.train(
+                gmm = GaussianMixtureModel()
+                gmm.fit(
+                    X_train,
+                    y_train,
                     apply_lbg=True,
                     num_components=[components_false, components_true],
                     cov_type="diagonal",
                     psi_eig=0.01,
-                )
+                ).scores(X_val)
+
                 scores = gmm.llr
                 min_dcf = dcf(scores, y_val, PRIOR, "min").item()
 
@@ -169,7 +175,7 @@ def lab10(DATA: str):
                     f"models/_diag_T{components_true:02d}_F{components_false:02d}.json",
                     "w",
                 ) as f:
-                    json.dump(gmm.to_json(), f)
+                    gmm.to_json(f)
 
                 if min_dcf < best_gmm_config["min_dcf"]:
                     best_gmm_config.update(
@@ -200,9 +206,9 @@ def lab10(DATA: str):
     )
 
     with open("models/gmm.json", "w") as f:
-        json.dump(best_gmm_config["model"], f, indent=4)
+        json.dump(best_gmm_config["model"], f)
 
-    with open("scores/gmm.npy", "wb") as f:
+    with open("models/scores/gmm.npy", "wb") as f:
         np.save(f, arr=best_gmm_config["scores"])
 
     scores = best_gmm_config.pop("scores")
@@ -214,7 +220,7 @@ def lab10(DATA: str):
     # Analyze the best combinations of SVM, LogReg and GMM
 
     try:
-        f = open("scores/log_reg.npy", "rb")
+        f = open("models/scores/log_reg.npy", "rb")
     except FileNotFoundError:
         console.print("[red]Please run Lab8 first.")
         return
@@ -223,7 +229,7 @@ def lab10(DATA: str):
             scores_log_reg = np.load(f)
 
     try:
-        f = open("scores/svm.npy", "rb")
+        f = open("models/scores/svm.npy", "rb")
     except FileNotFoundError:
         console.print("[red]Please run Lab9 first.")
         return

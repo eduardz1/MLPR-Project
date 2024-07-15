@@ -1,63 +1,62 @@
+import json
 from dataclasses import dataclass, field
+from io import TextIOWrapper
 from typing import Literal
 
 import numpy as np
 import numpy.typing as npt
 import scipy.special as sp
 
+from project.classifiers.classifier import Classifier
 from project.funcs.base import cov, vcol, vrow
 from project.funcs.log_pdf import log_pdf_gaussian, log_pdf_gmm
 
 
-class GaussianMixtureModel:
+class GaussianMixtureModel(Classifier):
     """
     Creates a Gaussian Mixture Model
 
     Attributes:
-        X_train (npt.NDArray): Training data.
-        y_train (npt.NDArray): Training labels.
-        X_val (npt.NDArray): Validation data.
         gmms (list[SingleGMM]): List of SingleGMM objects.
+        llr (npt.NDArray): Log likelihood ratio of the classifier.
+
+        _S (npt.NDArray): Scores of the classifier.
+        _fitted (bool): Whether the classifier has been fitted or not.
     """
 
-    def __init__(
-        self,
-        X_train: npt.NDArray,
-        y_train: npt.NDArray,
-        X_val: npt.NDArray,
-        y_val: npt.NDArray,
-    ) -> None:
-        """
-        Initializes the Gaussian Mixture Model
+    def __init__(self) -> None:
+        self.gmms = [SingleGMM() for _ in [0, 1]]
 
-        Args:
-            X_train (npt.NDArray): Training data.
-            y_train (npt.NDArray): Training labels.
-            X_val (npt.NDArray): Validation data.
-        """
-        self.X_train = X_train
-        self.y_train = y_train
-        self.X_val = X_val
-        self.y_val = y_val
+    def scores(self, X):
+        self._S = np.array([gmm.scores(X) for gmm in self.gmms])
 
-        classes = np.unique(y_train)
-
-        self.gmms = [SingleGMM(X_train[:, y_train == c]) for c in classes]
+        return self._S
 
     @property
-    def llr(self) -> npt.NDArray:
+    def llr(self):
         """
-        Log likelihood ratio of the classifier. llr(xₜ) = log(GMM(xₜ|M₁,S₁,w₁) / GMM(xₜ|M₀,S₀,w₀))
+        Log likelihood ratio of the classifier.
+        llr(xₜ) = log(GMM(xₜ|M₁,S₁,w₁) / GMM(xₜ|M₀,S₀,w₀))
         """
-        return log_pdf_gmm(self.X_val, self.gmms[1].params) - log_pdf_gmm(
-            self.X_val, self.gmms[0].params
-        )
+        if not hasattr(self, "_S"):
+            raise ValueError("Scores have not been computed yet.")
 
-    def train(self, num_components: list[int] | None = None, **kwargs) -> None:
+        return self._S[1] - self._S[0]
+
+    def fit(
+        self,
+        X: npt.NDArray,
+        y: npt.ArrayLike,
+        *,
+        num_components: list[int] | None = None,
+        **kwargs,
+    ) -> "GaussianMixtureModel":
         """
-        Trains the Gaussian Mixture Model by training each SingleGMM object
+        Fits the Gaussian Mixture Model by training each SingleGMM object
 
         Args:
+            X (npt.NDArray): Training data.
+            y (npt.ArrayLike): Training labels.
             num_components (list[int] | None, optional): The number of components
                 to use in the GMM for each class, default order is [false, true]
                 (0, 1, ...). If None, the number of components is 1 for each class.
@@ -71,40 +70,41 @@ class GaussianMixtureModel:
                 covariance matrix. Defaults to None.
             eps_ll_avg (float, optional): The minimum difference between the
                 log-likelihoods of two consecutive iterations. Defaults to 1e-6.
+
+        Returns:
+            GaussianMixtureModel: The trained Gaussian Mixture Model.
         """
         if num_components is None:
-            for gmm in self.gmms:
-                gmm.train(**kwargs)
+            for i, gmm in enumerate(self.gmms):
+                gmm.fit(X[:, y == i], **kwargs)
         else:
             # Train each GMM with the specified number of components
-            for gmm, num_component in zip(self.gmms, num_components):
-                gmm.train(num_components=num_component, **kwargs)
+            for i, (gmm, num_component) in enumerate(zip(self.gmms, num_components)):
+                gmm.fit(X[:, y == i], num_components=num_component, **kwargs)
 
-    def to_json(self) -> dict:
-        """
-        Serializes the Gaussian Mixture Model to a JSON like dictionary by
-        serializing each SingleGMM object
+        self._fitted = True
 
-        Returns:
-            dict: The JSON like dictionary
-        """
-        return {"gmms": {i: gmm.to_json() for i, gmm in enumerate(self.gmms)}}
+        return self
+
+    def to_json(self, fp=None):
+        if not self._fitted:
+            raise ValueError("Classifier has not been fitted yet.")
+
+        data = {"gmms": {i: gmm.to_json() for i, gmm in enumerate(self.gmms)}}
+
+        if fp is None:
+            return data
+
+        json.dump(data, fp)
 
     @staticmethod
-    def from_json(data: dict) -> "GaussianMixtureModel":
-        """
-        Deserializes the Gaussian Mixture Model from a JSON object serialized by
-        the `to_json` method
+    def from_json(data):
+        decoded = (
+            json.load(data) if isinstance(data, TextIOWrapper) else json.loads(data)
+        )
 
-        Args:
-            data (dict): The JSON data to deserialize or a dictionary containing
-                the "gmms" key with the serialized SingleGMM objects
-
-        Returns:
-            GaussianMixtureModel: The deserialized Gaussian Mixture Model
-        """
         gmms = []
-        for _, gmm in data["gmms"].items():
+        for _, gmm in decoded["gmms"].items():
             gmms.append(SingleGMM.from_json(gmm))
 
         gmm = GaussianMixtureModel.__new__(GaussianMixtureModel)
@@ -114,34 +114,41 @@ class GaussianMixtureModel:
 
 
 @dataclass
-class SingleGMM:
+class SingleGMM(Classifier):
     """
     Creates a Single Gaussian Mixture Model
 
     Attributes:
-        X (npt.NDArray): Training data.
         params (list[tuple[npt.NDArray, npt.NDArray, npt.NDArray]]): List of
             tuples containing the weights, means, and covariances of the GMM.
     """
 
-    X: npt.NDArray
     params: list[tuple[npt.NDArray, npt.NDArray, npt.NDArray]] = field(
         default_factory=list
     )
 
-    def train(
+    def scores(self, X):
+        return log_pdf_gmm(X, self.params)
+
+    @property
+    def llr(self):
+        raise NotImplementedError
+
+    def fit(
         self,
+        X: npt.NDArray,
         *,
         apply_lbg: bool = False,
         num_components: int = 1,
         cov_type: Literal["full"] | Literal["diagonal"] | Literal["tied"] = "full",
         eps_ll_avg: float = 1e-6,
         psi_eig: float | None = None,
-    ):
+    ) -> "SingleGMM":
         """
-        Trains the Gaussian Mixture Model using the Expectation-Maximization algorithm
+        Fits the Gaussian Mixture Model using the Expectation-Maximization algorithm
 
         Args:
+            X (npt.NDArray): The training data.
             apply_lbg (bool, optional): Whether to apply the Linde-Buzo-Gray
                 algorithm to initialize the GMM. Defaults to False.
             num_components (int, optional): The number of components to use in
@@ -153,14 +160,17 @@ class SingleGMM:
                 covariance matrix. Defaults to None.
             eps_ll_avg (float, optional): The minimum difference between the
                 log-likelihoods of two consecutive iterations. Defaults to 1e-6.
+
+        Returns:
+            SingleGMM: The trained Single Gaussian Mixture Model.
         """
 
         if apply_lbg:
-            mu = vcol(np.mean(self.X, axis=1))
-            C = cov(self.X)
+            mu = vcol(np.mean(X, axis=1))
+            C = cov(X)
 
             if cov_type == "diagonal":
-                C = C * np.eye(self.X.shape[0])
+                C = C * np.eye(X.shape[0])
 
             self.params = [
                 (
@@ -172,30 +182,36 @@ class SingleGMM:
 
             while len(self.params) < num_components:
                 self.__lbg_split()
-                self.__train(cov_type, eps_ll_avg, psi_eig)
+                self.__train(X, cov_type, eps_ll_avg, psi_eig)
         else:
-            self.__train(cov_type, eps_ll_avg, psi_eig)
+            self.__train(X, cov_type, eps_ll_avg, psi_eig)
 
-    def __train(self, cov_type, eps_ll_avg, psi_eig):
+        self._fitted = True
+
+        return self
+
+    def __train(
+        self, X: npt.NDArray, cov_type: str, eps_ll_avg: float, psi_eig: float | None
+    ):
         """
         Trains the Gaussian Mixture Model using the Expectation-Maximization algorithm
         """
 
         while True:
-            old_ll = np.mean(log_pdf_gmm(self.X, self.params))
-            self.__em_it(cov_type, psi_eig)
-            new_ll = np.mean(log_pdf_gmm(self.X, self.params))
+            old_ll = np.mean(log_pdf_gmm(X, self.params))
+            self.__em_it(X, cov_type, psi_eig)
+            new_ll = np.mean(log_pdf_gmm(X, self.params))
 
             if new_ll - old_ll < eps_ll_avg:
                 break
 
-    def __em_it(self, cov_type, psi_eig):
+    def __em_it(self, X, cov_type, psi_eig):
         """
         Applies one iteration of the Expectation-Maximization algorithm
         """
 
         # E-step
-        S = [log_pdf_gaussian(self.X, mu, C) + np.log(w) for w, mu, C in self.params]
+        S = [log_pdf_gaussian(X, mu, C) + np.log(w) for w, mu, C in self.params]
 
         S = np.vstack(S)
 
@@ -212,16 +228,16 @@ class SingleGMM:
 
         for resp in responsibilities:
             Z = resp.sum() + epsilon  # Prevent division by zero
-            F = vcol((vrow(resp) * self.X).sum(1))
-            S = (vrow(resp) * self.X) @ self.X.T
+            F = vcol((vrow(resp) * X).sum(1))
+            S = (vrow(resp) * X) @ X.T
 
             # Update the parameters
             mu = F / Z
             C = S / Z - mu @ mu.T
-            w = Z / self.X.shape[1]
+            w = Z / X.shape[1]
 
             if cov_type == "diagonal":
-                C = C * np.eye(self.X.shape[0])
+                C = C * np.eye(X.shape[0])
 
             new_params.append((w, mu, C))
 

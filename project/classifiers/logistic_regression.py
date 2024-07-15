@@ -1,72 +1,77 @@
+import json
 from functools import partial
+from io import TextIOWrapper
 
 import numpy as np
 import numpy.typing as npt
 import scipy.optimize as opt
 from numba import njit
 
+from project.classifiers.classifier import Classifier
 from project.funcs.base import atleast_1d, quadratic_feature_expansion, vrow
 
 
-class LogisticRegression:
+class LogisticRegression(Classifier):
 
-    def __init__(
-        self,
-        X_train: npt.NDArray,
-        y_train: npt.NDArray,
-        X_val: npt.NDArray,
-        y_val: npt.NDArray,
-        quadratic: bool = False,
-    ) -> None:
+    def __init__(self, quadratic: bool = False) -> None:
         """
         Initializes the logistic regression classifier.
 
         Args:
-            X_train (npt.NDArray): the training data
-            y_train (npt.NDArray): the training labels
-            X_val (npt.NDArray): the validation data
-            y_val (npt.NDArray): the validation labels
             quadratic (bool, optional): if True, maps the features to a quadratic
                 space before training the classifier, defaults to False
         """
-        self.X_train = X_train
-        self.y_train = y_train
-        self.X_val = X_val
-        self.y_val = y_val
         self._quadratic = quadratic
 
-        if quadratic:
-            self.X_train = quadratic_feature_expansion(self.X_train)
-            self.X_val = quadratic_feature_expansion(self.X_val)
+    def scores(self, X):
+        if not self._fitted:
+            raise ValueError("Classifier has not been fitted yet.")
+
+        if self._quadratic:
+            X = quadratic_feature_expansion(X)
+
+        self._S = self._weights.T @ X + self._bias
+        return self._S
+
+    def predict(
+        self, X: npt.NDArray[np.float64], y: npt.ArrayLike | None = None
+    ) -> npt.ArrayLike:
+        """
+        Predict the labels of the validation set.
+
+        Args:
+            X (npt.NDArray[np.float64]): The validation set.
+            y (npt.ArrayLike, optional): The true labels of the validation set, defaults to None.
+
+        Returns:
+            npt.ArrayLike: The predicted labels of the validation set.
+        """
+        if not self._fitted:
+            raise ValueError("Classifier has not been fitted yet.")
+
+        self.scores(X)
+
+        predictions = self._S > 0
+
+        if y is not None:
+            self.accuracy = np.mean(predictions == y) * 100
+            self.error_rate = 100 - self.accuracy
+
+        return predictions
 
     @property
-    def scores(self) -> npt.NDArray:
-        """
-        Scores of the classifier.
-        """
-        return self._weights @ self.X_val + self._bias
-
-    @property
-    def llr(self) -> npt.NDArray:
+    def llr(self):
         """
         Posterior Log likelihood ratio of the classifier.
         """
-        pi = self._prior or np.mean(self.y_train)
 
-        return self.scores - np.log(pi / (1 - pi))
+        return self._S - np.log(self._prior / (1 - self._prior))
 
-    @property
-    def error_rate(self) -> float:
+    def fit(
+        self, X, y, *, l: float, prior: float | None = None
+    ) -> "LogisticRegression":
         """
-        Error rate measure of the classifier.
-        """
-        LP = self.scores > 0
-
-        return np.mean(LP != self.y_val)
-
-    def train(self, l: float, prior: float | None = None) -> float:
-        """
-        Train the logistic regression classifier using the training data and the
+        Fit the logistic regression classifier using the training data and the
         specified hyperparameters.
 
         Args:
@@ -79,20 +84,19 @@ class LogisticRegression:
             float: the value of the objective function at the optimal point
         """
 
-        self._prior = prior
+        if self._quadratic:
+            X = quadratic_feature_expansion(X)
 
-        log_reg = partial(
-            self.objective, DTR=self.X_train, LTR=self.y_train, l=l, prior=prior
-        )
+        log_reg = partial(self.objective, DTR=X, LTR=y, l=l, prior=prior)
 
-        x, f, _ = opt.fmin_l_bfgs_b(
-            log_reg,
-            np.zeros(self.X_train.shape[0] + 1),
-        )
+        x, self._f, _ = opt.fmin_l_bfgs_b(log_reg, np.zeros(X.shape[0] + 1))
 
         self._weights, self._bias = x[:-1], x[-1]
 
-        return f
+        self._fitted = True
+        self._prior = prior or np.mean(y)
+
+        return self
 
     @staticmethod
     @njit(cache=True)
@@ -163,34 +167,32 @@ class LogisticRegression:
 
         return f, np.hstack((GW, Gb))
 
-    def to_json(self) -> dict:
-        """
-        Serialize the logistic regression classifier to a JSON-serializable dictionary.
+    def to_json(self, fp=None):
+        if not self._fitted:
+            raise ValueError("Classifier has not been fitted yet.")
 
-        Returns:
-            dict: the serialized logistic regression classifier
-        """
-        return {
+        data = {
             "bias": self._bias,
             "prior": self._prior,
             "quadratic": self._quadratic,
             "weights": self._weights.tolist(),
         }
 
+        if fp is None:
+            return data
+
+        json.dump(data, fp)
+
     @staticmethod
-    def from_json(data: dict) -> "LogisticRegression":
-        """
-        Deserialize a logistic regression classifier from a JSON-serializable dictionary.
+    def from_json(data):
+        decoded = (
+            json.load(data) if isinstance(data, TextIOWrapper) else json.loads(data)
+        )
 
-        Args:
-            data (dict): the serialized logistic regression classifier
+        cl = LogisticRegression(decoded["quadratic"])
+        cl._bias = decoded["bias"]
+        cl._prior = decoded["prior"]
+        cl._weights = np.array(decoded["weights"])
+        cl._fitted = True
 
-        Returns:
-            LogisticRegression: the deserialized logistic regression classifier
-        """
-        log_reg = LogisticRegression.__new__(LogisticRegression)
-        log_reg._weights = np.array(data["weights"])
-        log_reg._bias = data["bias"]
-        log_reg._prior = data["prior"]
-        log_reg._quadratic = data["quadratic"]
-        return log_reg
+        return cl

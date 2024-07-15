@@ -126,5 +126,5 @@
 
   set page(header: none)
 
-  bibliography("works.bib", title: "References", full: true)
+  bibliography("works.bib", title: "External References", full: true)
 }

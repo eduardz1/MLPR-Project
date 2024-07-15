@@ -67,7 +67,6 @@ evaluating the models that we already trained).
       better performance?
 """
 
-import json
 import math
 import os
 from functools import partial
@@ -83,7 +82,7 @@ from project.classifiers.logistic_regression import LogisticRegression
 from project.classifiers.support_vector_machine import SupportVectorMachine
 from project.figures.plots import plot
 from project.figures.rich import table
-from project.funcs.base import load_data, quadratic_feature_expansion, split_db_2to1
+from project.funcs.base import load_data, split_db_2to1
 from project.funcs.dcf import bayes_error, dcf
 from project.funcs.kfolds import kfolds
 
@@ -195,16 +194,17 @@ def lab11(DATA: str):
     np.set_printoptions(precision=3, suppress=True)
 
     X, y = load_data(DATA)
+
     (X_eval, y_eval) = load_data("data/evalData.txt")
 
-    (X_train, y_train), (_, y_val) = split_db_2to1(X.T, y)
+    (X_train, _), (_, y_val) = split_db_2to1(X.T, y)
 
     priors = np.linspace(0.1, 0.9, 9)
 
     # region Load models and scores
 
     try:
-        f = open("scores/log_reg.npy", "rb")
+        f = open("models/scores/log_reg.npy", "rb")
         g = open("models/log_reg.json", "r")
     except FileNotFoundError:
         console.print("[red]Please run lab8 first.")
@@ -213,9 +213,9 @@ def lab11(DATA: str):
         with f:
             BEST_LOG_REG_SCORES = np.load(f, allow_pickle=True)
         with g:
-            LOG_REG = LogisticRegression.from_json(json.load(g))
+            LOG_REG = LogisticRegression.from_json(g)
     try:
-        f = open("scores/svm.npy", "rb")
+        f = open("models/scores/svm.npy", "rb")
         g = open("models/svm.json", "r")
     except FileNotFoundError:
         console.print("[red]Please run lab9 first.")
@@ -224,9 +224,9 @@ def lab11(DATA: str):
         with f:
             BEST_SVM_SCORES = np.load(f, allow_pickle=True)
         with g:
-            SVM = SupportVectorMachine.from_json(json.load(g))
+            SVM = SupportVectorMachine.from_json(g)
     try:
-        f = open("scores/gmm.npy", "rb")
+        f = open("models/scores/gmm.npy", "rb")
         g = open("models/gmm.json", "r")
 
         files = [file for file in os.listdir("models") if file.startswith("_")]
@@ -236,9 +236,7 @@ def lab11(DATA: str):
             with open(os.path.join("models", file), "r") as h:
                 ALL_GMM[file] = h.read()
 
-        ALL_GMM = {
-            k: GaussianMixtureModel.from_json(json.loads(v)) for k, v in ALL_GMM.items()
-        }
+        ALL_GMM = {k: GaussianMixtureModel.from_json(v) for k, v in ALL_GMM.items()}
     except FileNotFoundError:
         console.print("[red]Please run lab10 first.")
         return
@@ -246,26 +244,7 @@ def lab11(DATA: str):
         with f:
             BEST_GMM_SCORES = np.load(f, allow_pickle=True)
         with g:
-            GMM = GaussianMixtureModel.from_json(json.load(g))
-
-    LOG_REG.X_train = (
-        quadratic_feature_expansion(X_train) if LOG_REG._quadratic else X_train
-    )
-    LOG_REG.y_train = y_train
-    LOG_REG.X_val = (
-        quadratic_feature_expansion(X_eval.T) if LOG_REG._quadratic else X_eval.T
-    )
-    LOG_REG.y_val = y_eval
-
-    SVM.X_train = X_train
-    SVM.y_train = y_train
-    SVM.X_val = X_eval.T
-    SVM.y_val = y_eval
-
-    GMM.X_train = X_train
-    GMM.y_train = y_train
-    GMM.X_val = X_eval.T
-    GMM.y_val = y_eval
+            GMM = GaussianMixtureModel.from_json(g)
 
     models = {
         "log_reg": ([LOG_REG], [BEST_LOG_REG_SCORES]),
@@ -380,14 +359,21 @@ def lab11(DATA: str):
     )
 
     # region Evaluation
+    cl = LogisticRegression()
 
     for k, (model, scores) in models.items():
+        for m in model:
+            if isinstance(m, SupportVectorMachine):
+                if SVM._svm_type != "linear":
+                    m.scores(np.ascontiguousarray(X_eval.T), X_train)
+                    continue
+
+            m.scores(X_eval.T)
+
         SCAL = np.vstack(scores)
         SVAL = np.vstack([m.llr for m in model])
 
-        cl = LogisticRegression(SCAL, y_val, SVAL, y_eval)
-
-        cl.train(0, stats[k]["prior"])
+        cl.fit(SCAL, y_val, l=0, prior=stats[k]["prior"]).scores(SVAL)
 
         cal_scores = np.hstack([cl.llr])
         cal_labels = np.hstack([y_eval])
@@ -468,7 +454,7 @@ def lab11(DATA: str):
     diag = np.empty((6, 6))
 
     for k, gmm in ALL_GMM.items():
-        gmm.X_val = X_eval.T
+        gmm.scores(X_eval.T)
 
         llr = gmm.llr
 

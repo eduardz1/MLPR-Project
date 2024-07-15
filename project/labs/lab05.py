@@ -86,8 +86,6 @@ Gaussian models? Overall, what is the model that provided the best accuracy
 on the validation set?
 """
 
-import json
-
 import numpy as np
 from rich.console import Console
 
@@ -107,7 +105,12 @@ def lab05(DATA: str):
 
     (X_train, y_train), (X_val, y_val) = split_db_2to1(X.T, y)
 
-    cl = BinaryGaussian(X_train, y_train, X_val, y_val)
+    X_train = X_train.T
+    X_val = X_val.T
+
+    mvg = BinaryGaussian("multivariate")
+    tied = BinaryGaussian("tied")
+    naive = BinaryGaussian("naive")
 
     stats = {
         "Accuracy": "",
@@ -126,25 +129,25 @@ def lab05(DATA: str):
         if min_dcf < best_model_min_dcf["min_dcf"]:
             best_model_min_dcf["min_dcf"] = min_dcf
 
-            with open("scores/bin_gau.npy", "wb") as f:
+            with open("models/scores/bin_gau.npy", "wb") as f:
                 np.save(f, cl.llr)
 
             with open("models/bin_gau.json", "w") as f:
-                json.dump(cl.to_json(), f, indent=4)
+                cl.to_json(f)
 
     # Analyze performance of various classifiers with the full dataset
 
-    cl.fit(classifier="multivariate")
-    save_stats(cl, best_model_min_dcf)
-    table(console, "MV Gaussian classifier", stats, cl.llr)
+    mvg.fit(X_train, y_train).predict(X_val, y_val)
+    save_stats(mvg, best_model_min_dcf)
+    table(console, "MV Gaussian classifier", stats, mvg.llr)
 
-    cl.fit(classifier="tied")
-    save_stats(cl, best_model_min_dcf)
-    table(console, "Tied Covariance Gaussian classifier", stats, cl.llr)
+    tied.fit(X_train, y_train).predict(X_val, y_val)
+    save_stats(tied, best_model_min_dcf)
+    table(console, "Tied Covariance Gaussian classifier", stats, tied.llr)
 
-    cl.fit(classifier="naive")
-    save_stats(cl, best_model_min_dcf)
-    table(console, "Naive Gaussian classifier", stats, cl.llr)
+    naive.fit(X_train, y_train).predict(X_val, y_val)
+    save_stats(naive, best_model_min_dcf)
+    table(console, "Naive Gaussian classifier", stats, naive.llr)
 
     # Display the covariance matrix of each class
 
@@ -152,8 +155,8 @@ def lab05(DATA: str):
         console,
         "Covariance matrices",
         {
-            "Fake": f"{cl.covariances[0]}",
-            "Genuine": f"{cl.covariances[1]}",
+            "Fake": f"{mvg.C[0]}",
+            "Genuine": f"{mvg.C[1]}",
         },
     )
 
@@ -163,86 +166,86 @@ def lab05(DATA: str):
         console,
         "Correlation matrices",
         {
-            "Fake": f"{cl.corrcoef[0]}",
-            "Genuine": f"{cl.corrcoef[1]}",
+            "Fake": f"{mvg.corr[0]}",
+            "Genuine": f"{mvg.corr[1]}",
         },
     )
 
     # Plot covariances and correlation matrices as heatmaps
 
-    heatmap(cl.covariances[0], "Reds", "covariance_fake")
-    heatmap(cl.covariances[1], "Blues", "covariance_genuine")
-    heatmap(cl.corrcoef[0], "Reds", "correlation_fake")
-    heatmap(cl.corrcoef[1], "Blues", "correlation_genuine")
+    heatmap(mvg.C[0], "Reds", "covariance_fake")
+    heatmap(mvg.C[1], "Blues", "covariance_genuine")
+    heatmap(mvg.corr[0], "Reds", "correlation_fake")
+    heatmap(mvg.corr[1], "Blues", "correlation_genuine")
 
     # Try again repeating the classification without the last two features,
     # which do not fit well with the Gaussian assumption
 
-    cl.fit(classifier="multivariate", slicer=slice(-2))
-    save_stats(cl, best_model_min_dcf)
+    mvg.fit(X_train, y_train, slicer=slice(-2)).predict(X_val, y_val)
+    save_stats(mvg, best_model_min_dcf)
     table(
         console,
         "MV Gaussian classifier (without last two features)",
         stats,
-        cl.llr,
+        mvg.llr,
     )
 
-    cl.fit(classifier="tied", slicer=slice(-2))
-    save_stats(cl, best_model_min_dcf)
+    tied.fit(X_train, y_train, slicer=slice(-2)).predict(X_val, y_val)
+    save_stats(tied, best_model_min_dcf)
     table(
         console,
         "Tied Covariance Gaussian classifier (without last two features)",
         stats,
-        cl.llr,
+        tied.llr,
     )
 
-    cl.fit(classifier="naive", slicer=slice(-2))
-    save_stats(cl, best_model_min_dcf)
+    naive.fit(X_train, y_train, slicer=slice(-2)).predict(X_val, y_val)
+    save_stats(naive, best_model_min_dcf)
     table(
         console,
         "Naive Gaussian classifier (without last two features)",
         stats,
-        cl.llr,
+        naive.llr,
     )
 
     # Benchmark MVG and Tied Covariance Gaussian classifiers for first two features
 
-    cl.fit(classifier="multivariate", slicer=slice(2))
-    save_stats(cl, best_model_min_dcf)
+    mvg.fit(X_train, y_train, slicer=slice(2)).predict(X_val, y_val)
+    save_stats(mvg, best_model_min_dcf)
     table(
         console,
         "MV Gaussian classifier (first two features)",
         stats,
-        cl.llr,
+        mvg.llr,
     )
 
-    cl.fit(classifier="tied", slicer=slice(2))
-    save_stats(cl, best_model_min_dcf)
+    tied.fit(X_train, y_train, slicer=slice(2)).predict(X_val, y_val)
+    save_stats(tied, best_model_min_dcf)
     table(
         console,
         "Tied Covariance Gaussian classifier (first two features)",
         stats,
-        cl.llr,
+        tied.llr,
     )
 
     # Benchmark MVG and Tied Covariance Gaussian classifiers for third and fourth features
 
-    cl.fit(classifier="multivariate", slicer=slice(2, 4))
-    save_stats(cl, best_model_min_dcf)
+    mvg.fit(X_train, y_train, slicer=slice(2, 4)).predict(X_val, y_val)
+    save_stats(mvg, best_model_min_dcf)
     table(
         console,
         "MV Gaussian classifier (third and fourth features)",
         stats,
-        cl.llr,
+        mvg.llr,
     )
 
-    cl.fit(classifier="tied", slicer=slice(2, 4))
-    save_stats(cl, best_model_min_dcf)
+    tied.fit(X_train, y_train, slicer=slice(2, 4)).predict(X_val, y_val)
+    save_stats(tied, best_model_min_dcf)
     table(
         console,
         "Tied Covariance Gaussian classifier (third and fourth features)",
         stats,
-        cl.llr,
+        tied.llr,
     )
 
     # Try to reduce the dimensionality with PCA
@@ -252,14 +255,14 @@ def lab05(DATA: str):
     accuracies_naive = []
 
     for i in range(1, 7):
-        cl.fit(classifier="multivariate", pca_dimensions=i)
-        accuracies_mvg.append(cl.accuracy)
+        mvg.fit(X_train, y_train, pca_dims=i).predict(X_val, y_val)
+        accuracies_mvg.append(mvg.accuracy)
 
-        cl.fit(classifier="tied", pca_dimensions=i)
-        accuracies_tied.append(cl.accuracy)
+        tied.fit(X_train, y_train, pca_dims=i).predict(X_val, y_val)
+        accuracies_tied.append(tied.accuracy)
 
-        cl.fit(classifier="naive", pca_dimensions=i)
-        accuracies_naive.append(cl.accuracy)
+        naive.fit(X_train, y_train, pca_dims=i).predict(X_val, y_val)
+        accuracies_naive.append(naive.accuracy)
 
     plot(
         {

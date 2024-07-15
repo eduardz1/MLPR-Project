@@ -83,7 +83,10 @@ def lab09(DATA: str):
 
     PRIOR = 0.1
 
-    svm = SupportVectorMachine(X_train, y_train, X_val, y_val)
+    linear_svm = SupportVectorMachine("linear")
+    poly_svm = SupportVectorMachine("poly_kernel")
+    rbf_svm = SupportVectorMachine("rbf_kernel")
+
     range_c = np.logspace(-5, 0, 11)
 
     best_svm_config = {
@@ -111,8 +114,7 @@ def lab09(DATA: str):
         task = progress.add_task("Linear SVMs", total=len(range_c))
 
         for C in range_c:
-            svm.train("linear", K=1, C=C)
-            scores = svm.scores
+            scores = linear_svm.fit(X_train, y_train, K=1, C=C).scores(X_val)
             min_dcfs.append(dcf(scores, y_val, PRIOR, "min").item())
             act_dcfs.append(dcf(scores, y_val, PRIOR, "optimal").item())
 
@@ -126,7 +128,7 @@ def lab09(DATA: str):
                         "kernel_func": None,
                         "centered": False,
                         "scores": scores,
-                        "model": svm.to_json(),
+                        "model": linear_svm.to_json(),
                     }
                 )
 
@@ -143,10 +145,6 @@ def lab09(DATA: str):
     X_train_centered = X_train - X_train.mean(axis=1, keepdims=True)
     X_val_centered = X_val - X_val.mean(axis=1, keepdims=True)
 
-    svm_centered = SupportVectorMachine(
-        X_train_centered, y_train, X_val_centered, y_val
-    )
-
     with Progress(
         SpinnerColumn(),
         MofNCompleteColumn(),
@@ -159,8 +157,9 @@ def lab09(DATA: str):
         )
 
         for C in range_c:
-            svm_centered.train("linear", K=1, C=C)
-            scores = svm_centered.scores
+            scores = linear_svm.fit(X_train_centered, y_train, K=1, C=C).scores(
+                X_val_centered
+            )
             min_dcfs.append(dcf(scores, y_val, PRIOR, "min").item())
             act_dcfs.append(dcf(scores, y_val, PRIOR, "optimal").item())
 
@@ -174,7 +173,7 @@ def lab09(DATA: str):
                         "kernel_func": None,
                         "centered": True,
                         "scores": scores,
-                        "model": svm_centered.to_json(),
+                        "model": linear_svm.to_json(),
                     }
                 )
 
@@ -213,8 +212,9 @@ def lab09(DATA: str):
         )
 
         for C in range_c:
-            svm.train("poly_kernel", C=C, K=1, degree=2, c=1, xi=0)
-            scores = svm.scores
+            scores = poly_svm.fit(
+                X_train, y_train, K=1, C=C, degree=2, c=1, xi=0
+            ).scores(X_val, X_train)
             min_dcfs.append(dcf(scores, y_val, PRIOR, "min").item())
             act_dcfs.append(dcf(scores, y_val, PRIOR, "optimal").item())
 
@@ -228,7 +228,7 @@ def lab09(DATA: str):
                         "kernel_func": "poly_kernel(2, 1)",
                         "centered": False,
                         "scores": scores,
-                        "model": svm.to_json(),
+                        "model": poly_svm.to_json(),
                     }
                 )
 
@@ -267,8 +267,9 @@ def lab09(DATA: str):
             min_dcfs = []
 
             for C in Cs:
-                svm.train("rbf_kernel", C=C, K=1, gamma=g)
-                scores = svm.scores
+                scores = rbf_svm.fit(X_train, y_train, C=C, K=1, gamma=g).scores(
+                    X_val, X_train
+                )
                 min_dcfs.append(dcf(scores, y_val, PRIOR, "min").item())
                 act_dcfs.append(dcf(scores, y_val, PRIOR, "optimal").item())
 
@@ -282,7 +283,7 @@ def lab09(DATA: str):
                             "kernel_func": f"rbf_kernel({g})",
                             "centered": False,
                             "scores": scores,
-                            "model": svm.to_json(),
+                            "model": rbf_svm.to_json(),
                         }
                     )
 
@@ -330,8 +331,9 @@ def lab09(DATA: str):
         )
 
         for C in range_c:
-            svm.train("poly_kernel", C=C, K=1, degree=4, c=1, xi=0)
-            scores = svm.scores
+            scores = poly_svm.fit(
+                X_train, y_train, K=1, C=C, degree=4, c=1, xi=0
+            ).scores(X_val, X_train)
             min_dcfs.append(dcf(scores, y_val, PRIOR, "min").item())
             act_dcfs.append(dcf(scores, y_val, PRIOR, "optimal").item())
 
@@ -345,7 +347,7 @@ def lab09(DATA: str):
                         "kernel_func": "poly_kernel(4, 1)",
                         "centered": False,
                         "scores": scores,
-                        "model": svm.to_json(),
+                        "model": poly_svm.to_json(),
                     }
                 )
 
@@ -367,7 +369,7 @@ def lab09(DATA: str):
         ylabel="DCF",
     )
 
-    with open("scores/svm.npy", "wb") as f:
+    with open("models/scores/svm.npy", "wb") as f:
         np.save(f, best_svm_config["scores"])
 
     with open("models/svm.json", "w") as f:

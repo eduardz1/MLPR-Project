@@ -1,174 +1,142 @@
-from functools import cache, cached_property
+import json
+from dataclasses import dataclass
+from io import TextIOWrapper
 from typing import Literal
 
 import numpy as np
 import numpy.typing as npt
 
-from project.funcs.base import corr, cov
+from project.classifiers.classifier import Classifier
+from project.funcs.base import corr, cov, vcol
+from project.funcs.dcf import optimal_bayes_threshold
 from project.funcs.log_pdf import log_pdf_gaussian
 from project.funcs.pca import pca
 
 
-class BinaryGaussian:
+@dataclass
+class BinaryGaussian(Classifier):
     """
-    Creates a binary Gaussian classifier that can be fitted to the input data
-    with different strategies and configurations.
-
     Attributes:
-        X_train (npt.NDArray): Training data.
-        y_train (npt.NDArray): Training labels.
-        X_val (npt.NDArray): Validation data.
-        y_val (npt.NDArray): Validation labels.
+        type (Literal["naive", "tied", "multivariate"]): Type of classifier to use.
+
+        C (list[npt.NDArray]): Covariance matrices of the classes.
+        mu (list[npt.NDArray]): Means of the classes.
+        corr (list[npt.NDArray]): Correlation matrices of the classes.
+        llr (npt.NDArray): Log likelihood ratio of the classifier.
+        accuracy (float): Accuracy of the classifier.
+        error_rate (float): Error rate of the classifier.
+
+        _S (npt.NDArray): Scores of the classifier.
+        _pca_dims (int): Number of dimensions to keep after PCA.
+        _slicer (slice): Slice to apply to the data.
+        _fitted (bool): Whether the classifier has been fitted or not.
     """
 
-    def __init__(
-        self,
-        X_train: npt.NDArray,
-        y_train: npt.NDArray,
-        X_val: npt.NDArray,
-        y_val: npt.NDArray,
-    ) -> None:
-        self.__X_train = X_train
-        self.__y_train = y_train
-        self.__X_val = X_val
-        self.__y_val = y_val
+    def __init__(self, classifier: Literal["naive", "tied", "multivariate"]) -> None:
+        self.type = classifier
+        self._fitted = False
 
-        # Score matrix containing the class-conditional probabilities
-        self.__S = np.zeros((2, self.__X_val.shape[1]))
+    def scores(self, X):
+        if not self._fitted:
+            raise ValueError("Classifier has not been fitted yet.")
 
-    @cached_property
-    def covariances(self) -> list[npt.NDArray]:
-        """
-        List of the covariance matrices of the two classes.
-        C = (1/N) * Σ(x - μ)(x - μ)ᵀ
-        """
-        return [cov(self.__X_train[:, self.__y_train == k]) for k in [0, 1]]
+        if self._slicer:
+            X = X[:, self._slicer]
 
-    @cached_property
-    def means(self) -> list[npt.NDArray]:
-        """
-        List of the means of the two classes. μ = (1/N) * Σx
-        """
-        return [
-            np.mean(self.__X_train[:, self.__y_train == k], axis=1, keepdims=True)
-            for k in [0, 1]
-        ]
+        if self._pca_dims:
+            X = pca(X, self._pca_dims)[1]
 
-    @cached_property
-    def corrcoef(self) -> list[npt.NDArray]:
-        """
-        List of the correlation matrices of the two classes.
-        Corr(Xᵢ, Xⱼ) = C(Xᵢ, Xⱼ) / (σᵢ * σⱼ)
-        """
-        return [corr(self.__X_train[:, self.__y_train == k]) for k in [0, 1]]
+        X = X.T
+
+        self._S = np.zeros((2, X.shape[1]))
+        for i in [0, 1]:
+            mu = self.mu[i]
+            C = self.C[i]
+            self._S[i, :] = log_pdf_gaussian(X, vcol(mu), C)
+
+        return self._S
 
     @property
-    def accuracy(self) -> float:
-        """
-        Accuracy measure of the classifier.
-        """
-        return np.sum(self.__y_val == self.predict()) / self.__y_val.size * 100
-
-    @property
-    def error_rate(self) -> float:
-        """
-        Error rate measure of the classifier.
-        """
-        return 100 - self.accuracy
-
-    @property
-    def llr(self) -> npt.NDArray:
+    def llr(self):
         """
         Log likelihood ratio of the classifier. llr(xₜ) = log(𝑓(xₜ|h₁) / 𝑓(xₜ|h₀))
         """
-        return self.__S[1] - self.__S[0]
+        if not hasattr(self, "_S"):
+            raise ValueError("Scores have not been computed yet.")
+
+        return self._S[1] - self._S[0]
 
     def fit(
         self,
+        X: npt.NDArray[np.float64],
+        y: npt.ArrayLike,
         *,
         slicer: slice | None = None,
-        pca_dimensions: int | None = None,
-        classifier: (
-            Literal["naive"] | Literal["tied"] | Literal["multivariate"]
-        ) = "multivariate"
-    ) -> None:
+        pca_dims: int | None = None,
+    ) -> "BinaryGaussian":
         """
-        Fit the Gaussian classifier to the training data. Defaults to
-        multivariate gaussian if neither tied nor naive are specified.
+        Fit the Gaussian classifier to the training data.
 
         Args:
+            X (npt.NDArray[np.float64]): Training data.
+            y (npt.ArrayLike): Training labels.
             slicer (slice, optional): Slice to apply to the data. Defaults to None.
-            pca_dimensions (int, optional): Number of dimensions to keep after PCA
+            pca_dims (int, optional): Number of dimensions to keep after PCA
                 if one want to apply it as a pre-processing step. Defaults to None.
-            classifier ("naive" | "tied" | "multivariate", optional): Type of
-                classifier to use. Defaults to "multivariate".
+
+        Returns:
+            BinaryGaussian: The fitted classifier.
         """
 
-        self.__classifier = classifier
-        self.__pca_dimensions = pca_dimensions
+        self._pca_dims = pca_dims
+        self._slicer = slicer
 
-        # Slice the data first if needed
-        X_train = self.__X_train[slicer] if slicer else self.__X_train
-        X_val = self.__X_val[slicer] if slicer else self.__X_val
+        X = X[:, slicer] if slicer else X
 
-        # Apply PCA to the data if needed
-        if pca_dimensions:
-            X_train = pca(X_train.T, pca_dimensions)[1].T
-            X_val = pca(X_val.T, pca_dimensions)[1].T
+        if pca_dims:
+            X = pca(X, pca_dims)[1]
 
-        # Recompute the ML estimates if the data has been transformed either by
-        # PCA or by slicing
-        if (slicer or pca_dimensions) is not None:
-            covariances = [cov(X_train[:, self.__y_train == k]) for k in [0, 1]]
-            means = [
-                np.mean(X_train[:, self.__y_train == k], axis=1, keepdims=True)
-                for k in [0, 1]
-            ]
-        else:
-            covariances = self.covariances
-            means = self.means
+        split = [X[y == k] for k in [0, 1]]
 
-        # Compute the within class covariance matrix if the `tied covariance`
-        # classifier is selected
-        if classifier == "tied":
-            Sw = np.average(
-                [covariances[c] for c in [0, 1]],
+        self.C = [cov(split[k].T) for k in [0, 1]]
+        self.mu = [np.mean(split[k], axis=0) for k in [0, 1]]
+        self.corr = [corr(split[k].T) for k in [0, 1]]
+
+        if self.type == "tied":
+            Sw = np.average(  # Within-class covariance matrix
+                [self.C[k] for k in [0, 1]],
                 axis=0,
-                weights=np.array(
-                    [len(X_train[:, self.__y_train == c]) for c in [0, 1]]
-                ),
+                weights=np.array([len(split[k].T) for k in [0, 1]]),
             )
 
-        # Compute the log likelihoods for each sample of the validation set
-        for i in [0, 1]:
-            mu = means[i]
+            # If tied then the ML estimate of the covariance matrix is
+            # the within class covariance matrix
+            self.C = [Sw, Sw]
+        elif self.type == "naive":
+            # If naive then the ML estimate of the covariance matrix is
+            # the diagonal of the sample covariance matrix
+            self.C = [np.diag(np.diag(self.C[k])) for k in [0, 1]]
 
-            # fmt: off
-            C = (
-                # If naive then the ML estimate of the covariance matrix is
-                # the diagonal of the sample covariance matrix
-                np.diag(np.diag(covariances[i]))
-                if classifier == "naive"
+        self._fitted = True
 
-                # If tied then the ML estimate of the covariance matrix is
-                # the within class covariance matrix
-                else Sw
-                if classifier == "tied"
+        return self
 
-                # Otherwise, for the multivariate case, the ML estimate of the
-                # covariance matrix is the sample covariance matrix
-                else covariances[i]
-            )
-            # fmt: on
-
-            # Store the log likelihoods for each sample of class i
-            self.__S[i, :] = log_pdf_gaussian(X_val, mu, C)
-
-    def predict(self, pi_T=0.5, C_fn=1, C_fp=1) -> npt.ArrayLike:
+    def predict(
+        self,
+        X: npt.NDArray[np.float64],
+        y: npt.ArrayLike | None = None,
+        *,
+        pi_T: float = 0.5,
+        C_fn: float = 1,
+        C_fp: float = 1,
+    ) -> npt.ArrayLike:
         """
         Predict the class of the samples in the validation set.
 
         Args:
+            X (npt.NDArray[np.float64]): Validation set.
+            y (npt.ArrayLike, optional): True labels of the validation set, if
+                provided the accuracy and error rate will be computed. Defaults to None.
             pi_T (float, optional): Prior of the True class. Defaults to 0.5.
             C_fn (float, optional): Cost of false negatives. Defaults to 1.
             C_fp (float, optional): Cost of false positives. Defaults to 1.
@@ -176,47 +144,47 @@ class BinaryGaussian:
         Returns:
             ArrayLike: Predicted classes of the samples in the validation set.
         """
-        return self.llr > self._optimal_threshold(pi_T, C_fn, C_fp)
+        if not self._fitted:
+            raise ValueError("Classifier has not been fitted yet.")
 
-    @cache
-    def _optimal_threshold(self, pi_T: float, C_fn: float, C_fp: float) -> npt.NDArray:
-        """
-        Args:
-            pi_T (float): prior of the True class.
-            C_fn (float): Cost of false negatives.
-            C_fp (float): Cost of false positives.
+        self.scores(X)
 
-        Returns:
-            ndarray: -log((πᴛ * C𝑓𝑛) / ((1 - πᴛ) * C𝑓𝑝))
-        """
-        return -np.log((pi_T * C_fn) / ((1 - pi_T) * C_fp))
+        predictions = self.llr > optimal_bayes_threshold(pi_T, C_fn, C_fp)
+
+        if y is not None:
+            self.accuracy = np.mean(predictions == y) * 100
+            self.error_rate = 100 - self.accuracy
+
+        return predictions
 
     @staticmethod
-    def from_json(data: dict) -> "BinaryGaussian":
-        """
-        Deserialize the classifier from a JSON-like dictionary.
+    def from_json(data):
+        decoded = (
+            json.load(data) if isinstance(data, TextIOWrapper) else json.loads(data)
+        )
 
-        Args:
-            data (dict): Dictionary containing the classifier data.
+        cl = BinaryGaussian(decoded["classifier"])
+        cl.mu = decoded["mu"]
+        cl.C = decoded["C"]
+        cl._pca_dims = decoded["pca_dims"]
+        cl._slicer = decoded["slicer"]
+        cl._fitted = True
 
-        Returns:
-            BinaryGaussian: Deserialized classifier.
-        """
-        classifier = BinaryGaussian.__new__(BinaryGaussian)
-        classifier.__classifier = data["classifier"]
-        classifier.__S = data["S"]
-        classifier.__pca_dimensions = data["pca_dimensions"]
-        return classifier
+        return cl
 
-    def to_json(self) -> dict:
-        """
-        Serialize the classifier to a JSON-like dictionary.
+    def to_json(self, fp=None):
+        if not self._fitted:
+            raise ValueError("Classifier has not been fitted yet.")
 
-        Returns:
-            dict: Dictionary containing the classifier data.
-        """
-        return {
-            "classifier": self.__classifier,
-            "pca_dimensions": self.__pca_dimensions,
-            "S": self.__S.tolist(),
+        data = {
+            "classifier": self.type,
+            "mu": [mu.tolist() for mu in self.mu],
+            "C": [C.tolist() for C in self.C],
+            "pca_dims": self._pca_dims,
+            "slicer": self._slicer,
         }
+
+        if fp is None:
+            return data
+
+        json.dump(data, fp)
