@@ -17,7 +17,7 @@
 
     === Gaussian Mixture Model
 
-    The best prior $pi$ for the calibration transformation was $0.8$ but given that the model was already very well calibrated, the improvement is negligible (`actual DCF` decreased only by $0.0009$).
+    The best prior $pi$ for the calibration transformation #footnote([_Calibration was performed using `K-Fold cross-validation` with $K = 5$ as per default in #cite(<sadrfaridpour2019engineeringfastmultilevelsupport>, form: "prose")_]) was $0.8$ but given that the model was already very well calibrated, the improvement is negligible (`actual DCF` decreased only by $0.0009$).
 
     #figure(
       image("../imgs/calibration/gmm.svg"),
