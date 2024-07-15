@@ -35,8 +35,8 @@
     table(
       columns: 2,
       stroke: none,
-      [4],
       [5],
+      [6],
       table.cell(inset: 0em, image("../imgs/densities/density_0_4.svg")),
       table.cell(inset: 0em, image("../imgs/densities/density_0_5.svg")),
       table.cell(inset: 0em, image("../imgs/densities/density_1_4.svg")),

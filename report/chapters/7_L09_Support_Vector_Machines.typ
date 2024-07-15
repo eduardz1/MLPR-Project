@@ -34,7 +34,7 @@
 
   === Considerations on the degree
 
-  Looking at the distribution of the last two features (@gaussian-models[Lab 4 Section]) we can see that a degree 2 polynomial is not sufficient to separate the two classes, the degree 4 polynomial helps but to get an even better separation we would need a degree 5 polynomial due in particular to the way the `Fake` labels are distributed.
+  Looking at the way features 5 and 6 are distributed (@features-5-6-scatter) we see that a second-degree polynomial transformation would only push the features higher in a third dimension but that would not enable us to find any new meaningful separation hyperplane between the two, thus a higher degree is needed.
 
   == RBF Kernel SVM
 

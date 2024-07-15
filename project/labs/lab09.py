@@ -296,11 +296,11 @@ def lab09(DATA: str):
             {
                 **{
                     f"minDCF {l}": min_dcf
-                    for (l, _), min_dcf in zip(gamma, min_dcfs_gamma)
+                    for (l, _), min_dcf in zip(gamma, min_dcfs_gamma)  # noqa: E741
                 },
                 **{
                     f"actDCF {l}": act_dcf
-                    for (l, _), act_dcf in zip(gamma, act_dcfs_gamma)
+                    for (l, _), act_dcf in zip(gamma, act_dcfs_gamma)  # noqa: E741
                 },
             },
             Cs,
