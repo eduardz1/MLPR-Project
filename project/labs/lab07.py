@@ -53,7 +53,7 @@ from project.classifiers.binary_gaussian import BinaryGaussian
 from project.figures.plots import plot
 from project.figures.rich import table
 from project.funcs.base import load_data, split_db_2to1
-from project.funcs.dcf import bayes_error_plot, dcf
+from project.funcs.dcf import bayes_error, dcf
 from project.funcs.dcf import effective_prior as effective_prior
 
 
@@ -195,7 +195,7 @@ def lab07(DATA: str):
     for model in ["multivariate", "tied", "naive"]:
         cl.fit(classifier=model, pca_dimensions=best_pca_01_setups[model][1])  # type: ignore
 
-        log_odds, act_dcf, min_dcf = bayes_error_plot(cl.llr, y_val)
+        log_odds, act_dcf, min_dcf = bayes_error(cl.llr, y_val)
 
         plot(
             {
@@ -203,7 +203,7 @@ def lab07(DATA: str):
                 "Min DCF": min_dcf.tolist(),
             },
             log_odds,
-            colors=["blue", "blue"],
+            colors=["purple", "purple"],
             linestyles=["solid", "dashed"],
             file_name=f"{model}_prior_log_odds",
             xlabel="Effective prior log odds",

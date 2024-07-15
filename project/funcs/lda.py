@@ -1,6 +1,6 @@
 import numpy as np
 import numpy.typing as npt
-import scipy
+import scipy.linalg
 
 from project.funcs.base import cov, vcol, vrow
 
@@ -23,11 +23,11 @@ def lda(
     """
 
     labels = np.unique(y)
-    means = np.array([np.mean(X[y == c], axis=0) for c in labels])
-    global_mean = np.mean(X, axis=0)
-    weights = np.array([len(X[y == c]) for c in labels])
+    split = [X[y == c] for c in labels]
+    means = [np.mean(x, axis=0) for x in split]
+    global_mean = np.mean(means, axis=0)
+    weights = [len(x) for x in split]
 
-    # fmt: off
     # Compute the between-class covariance matrix
     Sb = np.average(
         [vcol(mu := (means[c] - global_mean)) @ vrow(mu) for c in labels],
@@ -37,11 +37,10 @@ def lda(
 
     # Compute the within-class covariance matrix
     Sw = np.average(
-        [cov(X[y == c].T) for c in labels],
+        [cov(x.T) for x in split],
         axis=0,
-        weights=weights
+        weights=weights,
     )
-    # fmt: on
 
     # Compute the eigenvectors of the generalized eigenvalue problem
     _, eigvec = scipy.linalg.eigh(Sb, Sw)

@@ -119,6 +119,7 @@ def lab03(DATA: str):
     plot(
         dict({"Error rate": error_rates_pca}),
         range(1, X.shape[1] + 1),
+        colors=["purple"],
         file_name="error_rate_pca",
         figsize=(8, 3),
         xlabel="Number of PCA dimensions",

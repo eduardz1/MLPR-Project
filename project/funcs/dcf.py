@@ -8,12 +8,36 @@ from project.funcs.base import atleast_1d, compute_confusion_matrices, confusion
 
 
 @njit(cache=True)
-def optimal_bayes_threshold(pi: float, C_fn: float, C_fp: float) -> float:
-    return -np.log((pi * C_fn) / ((1 - pi) * C_fp))
+def optimal_bayes_threshold(pi: float, cost_fn: float, cost_fp: float) -> float:
+    """
+    Compute the optimal threshold for the given prior and cost of false negative
+    and false positive.
+
+    Args:
+        pi (float): The prior probability of a genuine sample.
+        cost_fn (float): The cost of false negative.
+        cost_fp (float): The cost of false positive.
+
+    Returns:
+        float: The optimal threshold.
+    """
+    return -np.log((pi * cost_fn) / ((1 - pi) * cost_fp))
 
 
-def effective_prior(pi_T: float, C_fn: float, C_fp: float) -> float:
-    return (pi_T * C_fn) / (pi_T * C_fn + (1 - pi_T) * C_fp)
+def effective_prior(pi: float, cost_fn: float, cost_fp: float) -> float:
+    """
+    Compute the effective prior for the given prior and cost of false negative
+    and false positive.
+
+    Args:
+        pi (float): The prior probability of a genuine sample.
+        cost_fn (float): The cost of false negative.
+        cost_fp (float): The cost of false positive.
+
+    Returns:
+        float: The effective prior.
+    """
+    return (pi * cost_fn) / (pi * cost_fn + (1 - pi) * cost_fp)
 
 
 @njit(cache=True, parallel=True)
@@ -22,15 +46,16 @@ def dcf(
     y_val: npt.NDArray,
     pi: npt.ArrayLike,
     strategy: Literal["optimal"] | Literal["min"] | Literal["manual"],
-    Cf_n: float = 1,
-    Cf_p: float = 1,
+    cost_fn: float = 1,
+    cost_fp: float = 1,
     normalize=True,
     threshold=0.0,
 ) -> npt.NDArray[np.float64]:
     """
-    Compute the Detection Cost Function (DCF) for the given data and priors. This
-    function is used to speedup the computation of the DCF values for a range of
-    effective priors.
+    Compute the binary Detection Cost Function (DCF) (Bayes Risk) for the given
+    data, priors and cost of false negative and false positive. Can compute the
+    actual DCF value by using the optimal threshold, the minimum DCF value, or a
+    DCF value for a given threshold.
 
     Args:
         llr (NDArray): The log-likelihood ratio values.
@@ -44,8 +69,8 @@ def dcf(
         ): The threshold strategy to use, either "optimal", "min", or "manual".
             Use "optimal" to compute the optimal threshold, "min" to compute the
             minimum DCF value, and "manual" to use the given threshold.
-        Cf_n (float): The cost of false negative. Defaults to 1.
-        Cf_p (float): The cost of false positive. Defaults to 1.
+        cost_fn (float): The cost of false negative. Defaults to 1.
+        cost_fp (float): The cost of false positive. Defaults to 1.
         normalize (bool, optional): Whether to normalize the DCF value.
             Defaults to True.
         threshold (float, optional): The threshold to use if strategy is "manual".
@@ -61,33 +86,33 @@ def dcf(
     if strategy == "min":
         cms = compute_confusion_matrices(y_val, llr)
 
-        P_fn = cms[:, 1, 0] / cms[:, 1].sum(axis=1)
-        P_fp = cms[:, 0, 1] / cms[:, 0].sum(axis=1)
+        p_fn = cms[:, 1, 0] / cms[:, 1].sum(axis=1)
+        p_fp = cms[:, 0, 1] / cms[:, 0].sum(axis=1)
 
-        F = P_fn * Cf_n
-        G = P_fp * Cf_p
+        F = p_fn * cost_fn
+        P = p_fp * cost_fp
 
-        for i, p in enumerate(pis):
-            denominator = min(p * Cf_n, (1 - p) * Cf_p) if normalize else 1
+        for i, _pi in enumerate(pis):
+            denominator = min(_pi * cost_fn, (1 - _pi) * cost_fp) if normalize else 1
 
-            res[i] = np.min(p * F + (1 - p) * G) / denominator
+            res[i] = np.min(_pi * F + (1 - _pi) * P) / denominator
     else:
-        for i, p in enumerate(pis):
+        for i, _pi in enumerate(pis):
             if strategy == "optimal":
-                threshold = optimal_bayes_threshold(p, Cf_n, Cf_p)
+                threshold = optimal_bayes_threshold(_pi, cost_fn, cost_fp)
 
             y_pred = llr > threshold
 
             cm = confusion_matrix(y_val, y_pred)
 
-            P_fn = cm[1, 0] / cm[1].sum()
-            P_fp = cm[0, 1] / cm[0].sum()
+            p_fn = cm[1, 0] / (cm[1, 0] + cm[1, 1])
+            p_fp = cm[0, 1] / (cm[0, 0] + cm[0, 1])
 
-            res[i] = (p * P_fn * Cf_n + (1 - p) * P_fp * Cf_p) / (
+            res[i] = (_pi * p_fn * cost_fn + (1 - _pi) * p_fp * cost_fp) / (
                 # Normalize the DCF value by dividing it by the best of the two
                 # dummy systems: the one that always accepts a test segment and
                 # the one that always rejects it.
-                min(p * Cf_n, (1 - p) * Cf_p)
+                min(_pi * cost_fn, (1 - _pi) * cost_fp)
                 if normalize
                 else 1  # If normalization is not required, return the raw DCF value
             )
@@ -95,8 +120,8 @@ def dcf(
     return res
 
 
-@njit(cache=True, parallel=True)
-def bayes_error_plot(
+@njit(cache=True)
+def bayes_error(
     scores: npt.NDArray,
     labels: npt.NDArray,
     left: float = -4,
@@ -118,7 +143,7 @@ def bayes_error_plot(
             Defaults to 21.
 
     Returns:
-        Tuple[npt.NDArray, npt.NDArray, npt.NDArray]: The effective priors,
+        tuple[npt.NDArray, npt.NDArray, npt.NDArray]: The effective priors,
             the actual DCF values, and the minimum DCF values.
     """
 

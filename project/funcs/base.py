@@ -116,14 +116,8 @@ def confusion_matrix(y_true: npt.NDArray, y_pred: npt.NDArray) -> npt.NDArray[np
     """
     return np.array(
         [
-            [
-                np.sum(np.logical_and(y_true == 0, y_pred == 0)),
-                np.sum(np.logical_and(y_true == 0, y_pred == 1)),
-            ],
-            [
-                np.sum(np.logical_and(y_true == 1, y_pred == 0)),
-                np.sum(np.logical_and(y_true == 1, y_pred == 1)),
-            ],
+            [sum(~y_true & ~y_pred), sum(~y_true & y_pred)],
+            [sum(y_true & ~y_pred), sum(y_true & y_pred)],
         ]
     )
 
@@ -173,13 +167,23 @@ def compute_confusion_matrices(
     return cms
 
 
-def quadratic_feature_expansion(X):
+def quadratic_feature_expansion(X: npt.NDArray[np.float64]) -> npt.NDArray:
+    """
+    Applies quadratic feature expansion to the given data, mapping X to
+
+             __          __
+             | vec(x x^T) |
+    phi(x) = |     x      |
+             --          --
+
+    Args:
+        X (npt.NDArray[np.float64]): The data matrix
+
+    Returns:
+        npt.NDArray: The expanded data matrix
+    """
     X = X.T
 
-    # Compute the outer product for each vector with itself using einsum
-    outer_products = np.einsum("ij,ik->ijk", X, X)
+    X_panded = [np.concatenate([np.outer(x, x).flatten(), x]) for x in X]
 
-    flattened_outer_products = outer_products.reshape(X.shape[0], -1)
-    X_panded = np.concatenate([flattened_outer_products, X], axis=1)
-
-    return X_panded.T
+    return np.array(X_panded).T

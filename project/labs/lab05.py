@@ -6,7 +6,7 @@ validation subsets (important: use the same splits for all models, including
 those presented in other laboratories), train the model parameters on the model
 training portion of the dataset and compute LLRs
 
-s(xt) = llr(xt) = fX|C (xt|1) / fX|C (xt|0)
+`s(xt) = llr(xt) = fX|C (xt|1) / fX|C (xt|0)`
 
 (i.e., with class True, label 1 on top of the ratio) for the validation subset.
 Obtain predictions from LLRs assuming uniform class priors
@@ -33,11 +33,11 @@ or small compared to variances? To better visualize the strength of co-variances
 with respect to variances we can compute, for a pair of features i, j, the
 Pearson correlation coefficient, defined as
 
-Corr(i, j) = Cov(i, j) / (√V ar(i) √V ar(j))
+`Corr(i, j) = Cov(i, j) / (√V ar(i) √V ar(j))`
 
 or, directly matrix form,
 
-Corr = C / ( vcol(C.diagonal()**0.5) * vrow(C.diagonal()**0.5) )
+`Corr = C / ( vcol(C.diagonal()**0.5) * vrow(C.diagonal()**0.5) )`
 
 where C is a covariance matrix. The correlation matrix has diagonal elements
 equal to 1, whereas out-of-diagonal elements correspond to the correlation
@@ -86,6 +86,8 @@ Gaussian models? Overall, what is the model that provided the best accuracy
 on the validation set?
 """
 
+import json
+
 import numpy as np
 from rich.console import Console
 
@@ -93,10 +95,12 @@ from project.classifiers.binary_gaussian import BinaryGaussian
 from project.figures.plots import heatmap, plot
 from project.figures.rich import table
 from project.funcs.base import load_data, split_db_2to1
+from project.funcs.dcf import dcf
 
 
 def lab05(DATA: str):
     console = Console()
+
     np.set_printoptions(precision=3, suppress=True)
 
     X, y = load_data(DATA)
@@ -110,22 +114,36 @@ def lab05(DATA: str):
         "Error rate": "",
     }
 
-    def save_stats(accuracy, error_rate):
-        stats["Accuracy"] = f"{accuracy:.2f}%"
-        stats["Error rate"] = f"{error_rate:.2f}%"
+    PRIOR = 0.1
+
+    best_model_min_dcf = {"min_dcf": np.inf}
+
+    def save_stats(cl, best_model_min_dcf):
+        stats["Accuracy"] = f"{cl.accuracy:.2f}%"
+        stats["Error rate"] = f"{cl.error_rate:.2f}%"
+
+        min_dcf = dcf(cl.llr, y_val, PRIOR, "min").item()
+        if min_dcf < best_model_min_dcf["min_dcf"]:
+            best_model_min_dcf["min_dcf"] = min_dcf
+
+            with open("scores/bin_gau.npy", "wb") as f:
+                np.save(f, cl.llr)
+
+            with open("models/bin_gau.json", "w") as f:
+                json.dump(cl.to_json(), f, indent=4)
 
     # Analyze performance of various classifiers with the full dataset
 
     cl.fit(classifier="multivariate")
-    save_stats(cl.accuracy, cl.error_rate)
+    save_stats(cl, best_model_min_dcf)
     table(console, "MV Gaussian classifier", stats, cl.llr)
 
     cl.fit(classifier="tied")
-    save_stats(cl.accuracy, cl.error_rate)
+    save_stats(cl, best_model_min_dcf)
     table(console, "Tied Covariance Gaussian classifier", stats, cl.llr)
 
     cl.fit(classifier="naive")
-    save_stats(cl.accuracy, cl.error_rate)
+    save_stats(cl, best_model_min_dcf)
     table(console, "Naive Gaussian classifier", stats, cl.llr)
 
     # Display the covariance matrix of each class
@@ -161,7 +179,7 @@ def lab05(DATA: str):
     # which do not fit well with the Gaussian assumption
 
     cl.fit(classifier="multivariate", slicer=slice(-2))
-    save_stats(cl.accuracy, cl.error_rate)
+    save_stats(cl, best_model_min_dcf)
     table(
         console,
         "MV Gaussian classifier (without last two features)",
@@ -170,7 +188,7 @@ def lab05(DATA: str):
     )
 
     cl.fit(classifier="tied", slicer=slice(-2))
-    save_stats(cl.accuracy, cl.error_rate)
+    save_stats(cl, best_model_min_dcf)
     table(
         console,
         "Tied Covariance Gaussian classifier (without last two features)",
@@ -179,7 +197,7 @@ def lab05(DATA: str):
     )
 
     cl.fit(classifier="naive", slicer=slice(-2))
-    save_stats(cl.accuracy, cl.error_rate)
+    save_stats(cl, best_model_min_dcf)
     table(
         console,
         "Naive Gaussian classifier (without last two features)",
@@ -190,7 +208,7 @@ def lab05(DATA: str):
     # Benchmark MVG and Tied Covariance Gaussian classifiers for first two features
 
     cl.fit(classifier="multivariate", slicer=slice(2))
-    save_stats(cl.accuracy, cl.error_rate)
+    save_stats(cl, best_model_min_dcf)
     table(
         console,
         "MV Gaussian classifier (first two features)",
@@ -199,7 +217,7 @@ def lab05(DATA: str):
     )
 
     cl.fit(classifier="tied", slicer=slice(2))
-    save_stats(cl.accuracy, cl.error_rate)
+    save_stats(cl, best_model_min_dcf)
     table(
         console,
         "Tied Covariance Gaussian classifier (first two features)",
@@ -210,7 +228,7 @@ def lab05(DATA: str):
     # Benchmark MVG and Tied Covariance Gaussian classifiers for third and fourth features
 
     cl.fit(classifier="multivariate", slicer=slice(2, 4))
-    save_stats(cl.accuracy, cl.error_rate)
+    save_stats(cl, best_model_min_dcf)
     table(
         console,
         "MV Gaussian classifier (third and fourth features)",
@@ -219,7 +237,7 @@ def lab05(DATA: str):
     )
 
     cl.fit(classifier="tied", slicer=slice(2, 4))
-    save_stats(cl.accuracy, cl.error_rate)
+    save_stats(cl, best_model_min_dcf)
     table(
         console,
         "Tied Covariance Gaussian classifier (third and fourth features)",
@@ -250,6 +268,7 @@ def lab05(DATA: str):
             "Naive Bayes": accuracies_naive,
         },
         range(1, 7),
+        colors=["purple", "green", "orange"],
         xlabel="Number of features",
         ylabel="Accuracy (%)",
         file_name="pca_to_gaussians",

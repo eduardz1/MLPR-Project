@@ -5,6 +5,7 @@ import os
 import typst
 from rich.console import Console
 from rich.status import Status
+from rich.traceback import install
 
 from project.labs.lab02 import lab02
 from project.labs.lab03 import lab03
@@ -63,7 +64,7 @@ lab_config = {
     "lab11": {
         "enabled": False,
         "function": lab11,
-        "title": "Calibration and Fusion",
+        "title": "Calibration and Evaluation",
     },
 }
 
@@ -122,6 +123,7 @@ def parse_args():
 
 def main():
     console = Console()
+    install(show_locals=True)
     args = parse_args()
 
     def run_labs():

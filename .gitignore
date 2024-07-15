@@ -1,3 +1,9 @@
+# Scores of the classifiers
+*.npy
+
+# All model combinations for lab 11
+models/_*
+
 # VSCode
 .vscode/settings.json
 

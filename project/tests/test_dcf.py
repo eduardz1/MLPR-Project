@@ -27,8 +27,8 @@ class DCFTest(unittest.TestCase):
                 llr=self.commedia_llr_infpar,
                 y_val=self.commedia_labels_infpar,
                 pi=0.5,
-                Cf_n=1,
-                Cf_p=1,
+                cost_fn=1,
+                cost_fp=1,
                 strategy="optimal",
                 normalize=False,
             ).item()
@@ -39,8 +39,8 @@ class DCFTest(unittest.TestCase):
                 llr=self.commedia_llr_infpar,
                 y_val=self.commedia_labels_infpar,
                 pi=0.8,
-                Cf_n=1,
-                Cf_p=1,
+                cost_fn=1,
+                cost_fp=1,
                 strategy="optimal",
                 normalize=False,
             ).item()
@@ -51,8 +51,8 @@ class DCFTest(unittest.TestCase):
                 llr=self.commedia_llr_infpar,
                 y_val=self.commedia_labels_infpar,
                 pi=0.5,
-                Cf_n=10,
-                Cf_p=1,
+                cost_fn=10,
+                cost_fp=1,
                 strategy="optimal",
                 normalize=False,
             ).item()
@@ -63,8 +63,8 @@ class DCFTest(unittest.TestCase):
                 llr=self.commedia_llr_infpar,
                 y_val=self.commedia_labels_infpar,
                 pi=0.8,
-                Cf_n=1,
-                Cf_p=10,
+                cost_fn=1,
+                cost_fp=10,
                 strategy="optimal",
                 normalize=False,
             ).item()
@@ -87,8 +87,8 @@ class DCFTest(unittest.TestCase):
                 llr=self.commedia_llr_infpar,
                 y_val=self.commedia_labels_infpar,
                 pi=0.5,
-                Cf_n=1,
-                Cf_p=1,
+                cost_fn=1,
+                cost_fp=1,
                 strategy="optimal",
             ).item()
         )
@@ -98,8 +98,8 @@ class DCFTest(unittest.TestCase):
                 llr=self.commedia_llr_infpar,
                 y_val=self.commedia_labels_infpar,
                 pi=0.8,
-                Cf_n=1,
-                Cf_p=1,
+                cost_fn=1,
+                cost_fp=1,
                 strategy="optimal",
             ).item()
         )
@@ -109,8 +109,8 @@ class DCFTest(unittest.TestCase):
                 llr=self.commedia_llr_infpar,
                 y_val=self.commedia_labels_infpar,
                 pi=0.5,
-                Cf_n=10,
-                Cf_p=1,
+                cost_fn=10,
+                cost_fp=1,
                 strategy="optimal",
             ).item()
         )
@@ -120,8 +120,8 @@ class DCFTest(unittest.TestCase):
                 llr=self.commedia_llr_infpar,
                 y_val=self.commedia_labels_infpar,
                 pi=0.8,
-                Cf_n=1,
-                Cf_p=10,
+                cost_fn=1,
+                cost_fp=10,
                 strategy="optimal",
             ).item()
         )
@@ -143,8 +143,8 @@ class DCFTest(unittest.TestCase):
                 llr=self.commedia_llr_infpar,
                 y_val=self.commedia_labels_infpar,
                 pi=0.5,
-                Cf_n=1,
-                Cf_p=1,
+                cost_fn=1,
+                cost_fp=1,
                 strategy="min",
             ).item()
         )
@@ -154,8 +154,8 @@ class DCFTest(unittest.TestCase):
                 llr=self.commedia_llr_infpar,
                 y_val=self.commedia_labels_infpar,
                 pi=0.8,
-                Cf_n=1,
-                Cf_p=1,
+                cost_fn=1,
+                cost_fp=1,
                 strategy="min",
             ).item()
         )
@@ -165,8 +165,8 @@ class DCFTest(unittest.TestCase):
                 llr=self.commedia_llr_infpar,
                 y_val=self.commedia_labels_infpar,
                 pi=0.5,
-                Cf_n=10,
-                Cf_p=1,
+                cost_fn=10,
+                cost_fp=1,
                 strategy="min",
             ).item()
         )
@@ -176,8 +176,8 @@ class DCFTest(unittest.TestCase):
                 llr=self.commedia_llr_infpar,
                 y_val=self.commedia_labels_infpar,
                 pi=0.8,
-                Cf_n=1,
-                Cf_p=10,
+                cost_fn=1,
+                cost_fp=10,
                 strategy="min",
             ).item()
         )

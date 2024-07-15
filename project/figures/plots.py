@@ -2,6 +2,7 @@ from multiprocessing import Pool, cpu_count
 from typing import Callable, Dict, List
 
 import matplotlib
+from matplotlib.rcsetup import cycler
 from scipy.interpolate import griddata
 
 matplotlib.use("Agg")
@@ -164,17 +165,24 @@ def plot_surface(x, y, z, **kwargs):
     if "yticks" in kwargs:
         plt.yticks(kwargs.get("yticks"))
 
-    ax.plot_surface(X, Y, Z, cmap="coolwarm", alpha=0.6)  # type: ignore
-    ax.scatter(x, y, z, c=z, cmap="coolwarm")
+    ax.plot_surface(X, Y, Z, cmap="PiYG", alpha=0.6, rstride=1, cstride=1)  # type: ignore
+    ax.scatter(x, y, z, c=z, cmap="PiYG")
 
     ax.set_xlabel(kwargs.get("xlabel", "X"))
     ax.set_ylabel(kwargs.get("ylabel", "Y"))
     ax.set_zlabel(kwargs.get("zlabel", "Z"))  # type: ignore
 
-    plt.savefig(f"{IMG_FOLDER}/{kwargs.get('file_name')}.svg")
+    plt.savefig(
+        f"{IMG_FOLDER}/{kwargs.get('file_name')}.svg",
+        bbox_inches="tight",
+        pad_inches=0.2,
+    )
     plt.close(fig)
 
 
+@matplotlib.rc_context(
+    {"axes.prop_cycle": cycler(color=["purple", "green", "orange", "pink"])}
+)
 def plot(
     data: Dict[str, List],
     range: npt.ArrayLike,

@@ -104,6 +104,9 @@ class BinaryGaussian:
                 classifier to use. Defaults to "multivariate".
         """
 
+        self.__classifier = classifier
+        self.__pca_dimensions = pca_dimensions
+
         # Slice the data first if needed
         X_train = self.__X_train[slicer] if slicer else self.__X_train
         X_val = self.__X_val[slicer] if slicer else self.__X_val
@@ -187,3 +190,33 @@ class BinaryGaussian:
             ndarray: -log((πᴛ * C𝑓𝑛) / ((1 - πᴛ) * C𝑓𝑝))
         """
         return -np.log((pi_T * C_fn) / ((1 - pi_T) * C_fp))
+
+    @staticmethod
+    def from_json(data: dict) -> "BinaryGaussian":
+        """
+        Deserialize the classifier from a JSON-like dictionary.
+
+        Args:
+            data (dict): Dictionary containing the classifier data.
+
+        Returns:
+            BinaryGaussian: Deserialized classifier.
+        """
+        classifier = BinaryGaussian.__new__(BinaryGaussian)
+        classifier.__classifier = data["classifier"]
+        classifier.__S = data["S"]
+        classifier.__pca_dimensions = data["pca_dimensions"]
+        return classifier
+
+    def to_json(self) -> dict:
+        """
+        Serialize the classifier to a JSON-like dictionary.
+
+        Returns:
+            dict: Dictionary containing the classifier data.
+        """
+        return {
+            "classifier": self.__classifier,
+            "pca_dimensions": self.__pca_dimensions,
+            "S": self.__S.tolist(),
+        }

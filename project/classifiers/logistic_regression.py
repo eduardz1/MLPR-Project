@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from functools import partial
 
 import numpy as np
@@ -6,76 +5,53 @@ import numpy.typing as npt
 import scipy.optimize as opt
 from numba import njit
 
-from project.funcs.base import atleast_1d, vrow
+from project.funcs.base import atleast_1d, quadratic_feature_expansion, vrow
 
 
-@dataclass
 class LogisticRegression:
-    X_train: npt.NDArray
-    y_train: npt.NDArray
-    X_val: npt.NDArray
-    y_val: npt.NDArray
 
-    def train(
+    def __init__(
         self,
-        l: float,
-        prior: float,
-        prior_weighted: bool = False,
-        approx_grad: bool = False,
-    ):
+        X_train: npt.NDArray,
+        y_train: npt.NDArray,
+        X_val: npt.NDArray,
+        y_val: npt.NDArray,
+        quadratic: bool = False,
+    ) -> None:
         """
-        Train the logistic regression classifier using the training data and the
-        specified hyperparameters.
+        Initializes the logistic regression classifier.
 
         Args:
-            l (float): the regularization hyperparameter
-            prior (float): the prior probability of the positive class
-            prior_weighted (bool, optional): if True, the prior-weighted logistic
-                regression objective is used, otherwise the standard logistic
-                regression objective is used. Defaults to False.
-            approx_grad (bool, optional): if True, the gradient is approximated,
-                otherwise the exact gradient is used. Defaults to True.
-
-        Returns:
-            float: the value of the objective function at the optimal point
+            X_train (npt.NDArray): the training data
+            y_train (npt.NDArray): the training labels
+            X_val (npt.NDArray): the validation data
+            y_val (npt.NDArray): the validation labels
+            quadratic (bool, optional): if True, maps the features to a quadratic
+                space before training the classifier, defaults to False
         """
+        self.X_train = X_train
+        self.y_train = y_train
+        self.X_val = X_val
+        self.y_val = y_val
+        self._quadratic = quadratic
 
-        self.__prior_weighted = prior_weighted
-        self.__prior = prior
-
-        log_reg = partial(
-            self.objective,
-            approx_grad=approx_grad,
-            DTR=self.X_train,
-            LTR=self.y_train,
-            l=l,
-            prior=prior if prior_weighted else None,
-        )
-
-        x, f, _ = opt.fmin_l_bfgs_b(
-            log_reg,
-            np.zeros(self.X_train.shape[0] + 1),
-            approx_grad=approx_grad,
-        )
-
-        self._weights, self._bias = x[:-1], x[-1]
-
-        return f
+        if quadratic:
+            self.X_train = quadratic_feature_expansion(self.X_train)
+            self.X_val = quadratic_feature_expansion(self.X_val)
 
     @property
     def scores(self) -> npt.NDArray:
         """
         Scores of the classifier.
         """
-
         return self._weights @ self.X_val + self._bias
 
     @property
     def llr(self) -> npt.NDArray:
         """
-        Log likelihood ratio of the classifier.
+        Posterior Log likelihood ratio of the classifier.
         """
-        pi = self.__prior if self.__prior_weighted else np.mean(self.y_train)
+        pi = self._prior or np.mean(self.y_train)
 
         return self.scores - np.log(pi / (1 - pi))
 
@@ -84,20 +60,50 @@ class LogisticRegression:
         """
         Error rate measure of the classifier.
         """
-
         LP = self.scores > 0
+
         return np.mean(LP != self.y_val)
 
+    def train(self, l: float, prior: float | None = None) -> float:
+        """
+        Train the logistic regression classifier using the training data and the
+        specified hyperparameters.
+
+        Args:
+            l (float): the regularization hyperparameter
+            prior (float, optional): the prior probability of the positive class,
+                if None, the standard logistic regression objective is used,
+                otherwise the prior-weighted logistic regression objective is used
+
+        Returns:
+            float: the value of the objective function at the optimal point
+        """
+
+        self._prior = prior
+
+        log_reg = partial(
+            self.objective, DTR=self.X_train, LTR=self.y_train, l=l, prior=prior
+        )
+
+        x, f, _ = opt.fmin_l_bfgs_b(
+            log_reg,
+            np.zeros(self.X_train.shape[0] + 1),
+        )
+
+        self._weights, self._bias = x[:-1], x[-1]
+
+        return f
+
     @staticmethod
+    @njit(cache=True)
     def objective(
         v: npt.NDArray[np.float64],
         *,
         prior: float | None,
-        approx_grad: bool,
         DTR: npt.NDArray[np.float64],
         LTR: npt.NDArray[np.int64],
         l: float,
-    ) -> tuple[float, npt.NDArray[np.float64]] | float:
+    ) -> tuple[float, npt.NDArray[np.float64] | None]:
         """
         Logistic Regression Objective Function
 
@@ -105,44 +111,19 @@ class LogisticRegression:
             v (npt.NDArray[np.float64]): the vector of parameters
             prior (float | None): if not None, the prior probability of the positive
                 class, computes the prior-weighted logistic regression objective
-            approx_grad (bool): if True, only the result to the objective function
-                is returned, if False, the gradient is also returned
             DTR (npt.NDArray[np.float64]): the training data
             LTR (npt.NDArray[np.int64]): the training labels
             l (float): the regularization hyperparameter
+
+        Raises:
+            ValueError: if the vector of parameters has the wrong shape
 
         Returns:
             tuple[float, npt.NDArray[np.float64]] | float: the value of the
                 objective function and its gradient if approx_grad is False,
                 otherwise only the value of the objective function
         """
-        # This function wraps the real implementation to manage etheroegeneous
-        # return types in the numba.jit compiled function
-        result = LogisticRegression.__objective(
-            v,
-            prior=prior,
-            approx_grad=approx_grad,
-            DTR=DTR,
-            LTR=LTR,
-            l=l,
-        )
 
-        if approx_grad:
-            return result[0]
-
-        return result  # type: ignore
-
-    @staticmethod
-    @njit(cache=True)
-    def __objective(
-        v: npt.NDArray[np.float64],
-        *,
-        prior: float | None,
-        approx_grad: bool,
-        DTR: npt.NDArray[np.float64],
-        LTR: npt.NDArray[np.int64],
-        l: float,
-    ) -> tuple[float, npt.NDArray[np.float64] | None]:
         if v.shape[0] != (DTR.shape[0] + 1):
             raise ValueError(
                 "The vector of parameters has the wrong shape, expected (n,) where"
@@ -170,30 +151,46 @@ class LogisticRegression:
         # where zᵢ = 1 if cᵢ = 1, otherwise zᵢ = -1 if cᵢ = 0 (i.e. zᵢ = 2cᵢ - 1)
         f = l / 2 * np.linalg.norm(w) ** 2 + np.sum(Xi * np.logaddexp(0, -ZTR * S))
 
-        if not approx_grad:
-            # Gradient with respect to w, ∇wJ = λw + ∑_{i=1}^{n} ξᵢGᵢxᵢ if
-            # prior-weighted logistic regression objective is used,
-            # otherwise ∇wJ = λw + (1/n)∑_{i=1}^{n} Gᵢxᵢ
-            GW = l * w + (Xi * vrow(G) * DTR).sum(axis=1)
+        # Gradient with respect to w, ∇wJ = λw + ∑_{i=1}^{n} ξᵢGᵢxᵢ if
+        # prior-weighted logistic regression objective is used,
+        # otherwise ∇wJ = λw + (1/n)∑_{i=1}^{n} Gᵢxᵢ
+        GW = l * w + (Xi * vrow(G) * DTR).sum(axis=1)
 
-            # Gradient with respect to b, ∇bJ = ∑_{i=1}^{n} ξᵢGᵢ if
-            # prior-weighted logistic regression objective is used,
-            # otherwise ∇bJ = (1/n)∑_{i=1}^{n} Gᵢ
-            Gb = atleast_1d(np.sum(Xi * G))
+        # Gradient with respect to b, ∇bJ = ∑_{i=1}^{n} ξᵢGᵢ if
+        # prior-weighted logistic regression objective is used,
+        # otherwise ∇bJ = (1/n)∑_{i=1}^{n} Gᵢ
+        Gb = atleast_1d(np.sum(Xi * G))
 
-            return f, np.hstack((GW, Gb))
-
-        return f, None
+        return f, np.hstack((GW, Gb))
 
     def to_json(self) -> dict:
+        """
+        Serialize the logistic regression classifier to a JSON-serializable dictionary.
+
+        Returns:
+            dict: the serialized logistic regression classifier
+        """
         return {
-            "weights": self._weights.tolist(),
             "bias": self._bias,
+            "prior": self._prior,
+            "quadratic": self._quadratic,
+            "weights": self._weights.tolist(),
         }
 
     @staticmethod
     def from_json(data: dict) -> "LogisticRegression":
+        """
+        Deserialize a logistic regression classifier from a JSON-serializable dictionary.
+
+        Args:
+            data (dict): the serialized logistic regression classifier
+
+        Returns:
+            LogisticRegression: the deserialized logistic regression classifier
+        """
         log_reg = LogisticRegression.__new__(LogisticRegression)
         log_reg._weights = np.array(data["weights"])
         log_reg._bias = data["bias"]
+        log_reg._prior = data["prior"]
+        log_reg._quadratic = data["quadratic"]
         return log_reg

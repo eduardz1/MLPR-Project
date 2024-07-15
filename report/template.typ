@@ -1,20 +1,15 @@
-#import "funcs.typ": *
+#import "funcs.typ": clean_numbering
 
 #let template(
-  title: [Report for the Machine Learning \ & Pattern Recognition Project],
-  author: (
-    name: "Eduard Antonovic Occhipinti",
-    id: 947847,
-  ),
+  title: none,
+  author: (),
+  academic_year: "",
   body,
 ) = {
   set document(title: title, author: author.name)
   set text(font: "New Computer Modern", lang: "en", size: 10pt)
   set page(paper: "a4", numbering: ("1"))
-  show figure.caption: set text(size: 0.8em)
-  set enum(indent: 10pt, body-indent: 9pt)
-  set list(indent: 10pt, body-indent: 9pt, marker: ([•], [--]))
-  show figure.caption: emph
+  show figure.caption: set text(size: 0.8em, style: "italic")
 
   set heading(numbering: clean_numbering("I -", "1.a."))
   show heading: it => if it.level != 1 {
@@ -25,8 +20,7 @@
         grid(
           columns: 2,
           gutter: 0.5em,
-          counter(heading).display(it.numbering),
-          smallcaps(it.body),
+          counter(heading).display(it.numbering), smallcaps(it.body),
         )
       } else {
         smallcaps(it)
@@ -42,8 +36,7 @@
         grid(
           columns: 2,
           gutter: 0.5em,
-          counter(heading).display(it.numbering),
-          smallcaps(it.body),
+          counter(heading).display(it.numbering), smallcaps(it.body),
         )
       } else {
         smallcaps(it)
@@ -62,6 +55,27 @@
     stroke: (top: 0.5pt, bottom: 0.5pt),
   )
 
+  // Outline customization
+  show outline.entry.where(level: 1): it => {
+    if it.body != [References] {
+      v(12pt, weak: true)
+      link(
+        it.element.location(),
+        strong({
+          it.body
+          h(1fr)
+          it.page
+        }),
+      )
+    } else {
+      text(size: 1em, it)
+    }
+  }
+
+  // Title Page
+
+
+  // Legend
   set align(center)
   set page(header: [
     #set align(right)
@@ -70,8 +84,7 @@
         align: left,
         gutter: 0.5em,
         columns: 2,
-        rect(fill: red.transparentize(30%), width: 30pt, height: 1em),
-        [Fake],
+        rect(fill: red.transparentize(30%), width: 30pt, height: 1em), [Fake],
         rect(fill: blue.transparentize(30%), width: 30pt, height: 1em),
         [Genuine],
       )
@@ -80,6 +93,7 @@
 
   line(length: 100%)
 
+  // Title
   block()[
     #smallcaps(
       text(
@@ -95,9 +109,11 @@
 
   v(1fr)
 
+  // Author and Academic Year
   block()[
     *#author.name* \
-    #author.id
+    #author.id \ \
+    _Academic Year #academic_year _
   ]
 
   v(1fr)
@@ -110,5 +126,5 @@
 
   set page(header: none)
 
-  bibliography("works.bib", title: "References")
+  bibliography("works.bib", title: "References", full: true)
 }

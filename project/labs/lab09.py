@@ -83,7 +83,7 @@ def lab09(DATA: str):
 
     PRIOR = 0.1
 
-    svm = SupportVectorMachine(X_train, y_train, X_val)
+    svm = SupportVectorMachine(X_train, y_train, X_val, y_val)
     range_c = np.logspace(-5, 0, 11)
 
     best_svm_config = {
@@ -108,13 +108,11 @@ def lab09(DATA: str):
         *Progress.get_default_columns(),
         TimeElapsedColumn(),
     ) as progress:
-        task = progress.add_task("Linear SVM", total=len(range_c))
+        task = progress.add_task("Linear SVMs", total=len(range_c))
 
         for C in range_c:
-            progress.console.print(f"[cyan]Training with C = {C}")
-
-            svm.train(C, "linear", K=1)
-            scores = svm.llr
+            svm.train("linear", K=1, C=C)
+            scores = svm.scores
             min_dcfs.append(dcf(scores, y_val, PRIOR, "min").item())
             act_dcfs.append(dcf(scores, y_val, PRIOR, "optimal").item())
 
@@ -127,24 +125,15 @@ def lab09(DATA: str):
                         "C": C,
                         "kernel_func": None,
                         "centered": False,
-                        "scores": scores.tolist(),
+                        "scores": scores,
                         "model": svm.to_json(),
                     }
                 )
 
             progress.update(task, advance=1)
 
-    plot(
-        {
-            "minDCF": min_dcfs,
-            "actDCF": act_dcfs,
-        },
-        range_c,
-        file_name="svm/linear",
-        xscale="log",
-        xlabel="C",
-        ylabel="DCF",
-    )
+    min_dcfs_non_centered = min_dcfs.copy()
+    act_dcfs_non_centered = act_dcfs.copy()
 
     # Linear SVM with DCF and MinDCF as C varies with centered data
 
@@ -154,7 +143,9 @@ def lab09(DATA: str):
     X_train_centered = X_train - X_train.mean(axis=1, keepdims=True)
     X_val_centered = X_val - X_val.mean(axis=1, keepdims=True)
 
-    svm_centered = SupportVectorMachine(X_train_centered, y_train, X_val_centered)
+    svm_centered = SupportVectorMachine(
+        X_train_centered, y_train, X_val_centered, y_val
+    )
 
     with Progress(
         SpinnerColumn(),
@@ -163,15 +154,13 @@ def lab09(DATA: str):
         TimeElapsedColumn(),
     ) as progress:
         task = progress.add_task(
-            "Linear SVM with centered data",
+            "Linear SVMs with centered data",
             total=len(range_c),
         )
 
         for C in range_c:
-            progress.console.print(f"[cyan]Training with C = {C}")
-
-            svm_centered.train(C, "linear", K=1)
-            scores = svm_centered.llr
+            svm_centered.train("linear", K=1, C=C)
+            scores = svm_centered.scores
             min_dcfs.append(dcf(scores, y_val, PRIOR, "min").item())
             act_dcfs.append(dcf(scores, y_val, PRIOR, "optimal").item())
 
@@ -184,7 +173,7 @@ def lab09(DATA: str):
                         "C": C,
                         "kernel_func": None,
                         "centered": True,
-                        "scores": scores.tolist(),
+                        "scores": scores,
                         "model": svm_centered.to_json(),
                     }
                 )
@@ -193,11 +182,15 @@ def lab09(DATA: str):
 
     plot(
         {
-            "minDCF": min_dcfs,
-            "actDCF": act_dcfs,
+            "minDCF (centered)": min_dcfs,
+            "minDCF": min_dcfs_non_centered,
+            "actDCF (centered)": act_dcfs,
+            "actDCF": act_dcfs_non_centered,
         },
         range_c,
-        file_name="svm/linear_centered",
+        colors=["yellowgreen", "green", "violet", "purple"],
+        linestyles=["dotted", "dashed", "-.", "solid"],
+        file_name="svm/linear",
         xscale="log",
         xlabel="C",
         ylabel="DCF",
@@ -215,15 +208,13 @@ def lab09(DATA: str):
         TimeElapsedColumn(),
     ) as progress:
         task = progress.add_task(
-            "Polynomial Kernel SVM",
+            "Polynomial Kernel SVMs of degree 2",
             total=len(range_c),
         )
 
         for C in range_c:
-            progress.console.print(f"[cyan]Training with C = {C}")
-
-            svm.train(C, "kernel", K=1, kernel_func="poly_kernel", degree=2, c=1)
-            scores = svm.llr
+            svm.train("poly_kernel", C=C, K=1, degree=2, c=1, xi=0)
+            scores = svm.scores
             min_dcfs.append(dcf(scores, y_val, PRIOR, "min").item())
             act_dcfs.append(dcf(scores, y_val, PRIOR, "optimal").item())
 
@@ -236,32 +227,23 @@ def lab09(DATA: str):
                         "svm_type": "kernel",
                         "kernel_func": "poly_kernel(2, 1)",
                         "centered": False,
-                        "scores": scores.tolist(),
+                        "scores": scores,
                         "model": svm.to_json(),
                     }
                 )
 
             progress.update(task, advance=1)
 
-    plot(
-        {
-            "minDCF": min_dcfs,
-            "actDCF": act_dcfs,
-        },
-        range_c,
-        file_name="svm/poly_kernel",
-        xscale="log",
-        xlabel="C",
-        ylabel="DCF",
-    )
+    min_dcfs_poly_2 = min_dcfs.copy()
+    act_dcfs_poly_2 = act_dcfs.copy()
 
     # RBF Kernel SVM with DCF and minDCF as C varies
 
     gamma = [
-        ("$e^{-4}$", np.exp(-4)),
-        ("$e^{-3}$", np.exp(-3)),
-        ("$e^{-2}$", np.exp(-2)),
-        ("$e^{-1}$", np.exp(-1)),
+        ("$\\gamma = e^{-4}$", np.exp(-4)),
+        ("$\\gamma = e^{-3}$", np.exp(-3)),
+        ("$\\gamma = e^{-2}$", np.exp(-2)),
+        ("$\\gamma = e^{-1}$", np.exp(-1)),
     ]
     Cs = np.logspace(-3, 2, 11)
 
@@ -272,7 +254,7 @@ def lab09(DATA: str):
         TimeElapsedColumn(),
     ) as progress:
         task = progress.add_task(
-            "RBF Kernel SVM",
+            "RBF Kernel SVMs",
             total=len(Cs) * len(gamma),
         )
 
@@ -285,10 +267,8 @@ def lab09(DATA: str):
             min_dcfs = []
 
             for C in Cs:
-                progress.console.print(f"[cyan]Training with gamma = {g} and C = {C}")
-
-                svm.train(C, "kernel", K=1, kernel_func="rbf_kernel", gamma=g)
-                scores = svm.llr
+                svm.train("rbf_kernel", C=C, K=1, gamma=g)
+                scores = svm.scores
                 min_dcfs.append(dcf(scores, y_val, PRIOR, "min").item())
                 act_dcfs.append(dcf(scores, y_val, PRIOR, "optimal").item())
 
@@ -301,7 +281,7 @@ def lab09(DATA: str):
                             "svm_type": "kernel",
                             "kernel_func": f"rbf_kernel({g})",
                             "centered": False,
-                            "scores": scores.tolist(),
+                            "scores": scores,
                             "model": svm.to_json(),
                         }
                     )
@@ -345,15 +325,13 @@ def lab09(DATA: str):
         TimeElapsedColumn(),
     ) as progress:
         task = progress.add_task(
-            "Polynomial Kernel SVM with d = 4, c = 1, Xi = 0",
+            "Polynomial Kernel SVMs of degree 4",
             total=len(range_c),
         )
 
         for C in range_c:
-            progress.console.print(f"[cyan]Training with C = {C}")
-
-            svm.train(C, "kernel", K=1, kernel_func="poly_kernel", degree=4, c=1)
-            scores = svm.llr
+            svm.train("poly_kernel", C=C, K=1, degree=4, c=1, xi=0)
+            scores = svm.scores
             min_dcfs.append(dcf(scores, y_val, PRIOR, "min").item())
             act_dcfs.append(dcf(scores, y_val, PRIOR, "optimal").item())
 
@@ -366,7 +344,7 @@ def lab09(DATA: str):
                         "svm_type": "kernel",
                         "kernel_func": "poly_kernel(4, 1)",
                         "centered": False,
-                        "scores": scores.tolist(),
+                        "scores": scores,
                         "model": svm.to_json(),
                     }
                 )
@@ -375,20 +353,25 @@ def lab09(DATA: str):
 
     plot(
         {
-            "minDCF": min_dcfs,
-            "actDCF": act_dcfs,
+            "minDCF $d = 4$": min_dcfs,
+            "minDCF $d = 2$": min_dcfs_poly_2,
+            "actDCF $d = 4$": act_dcfs,
+            "actDCF $d = 2$": act_dcfs_poly_2,
         },
         range_c,
-        file_name="svm/poly_kernel_4",
+        colors=["yellowgreen", "green", "violet", "purple"],
+        linestyles=["dotted", "dashed", "-.", "solid"],
+        file_name="svm/poly_kernel",
         xscale="log",
         xlabel="C",
         ylabel="DCF",
     )
 
-    # TODO: part about considering only the last two features
+    with open("scores/svm.npy", "wb") as f:
+        np.save(f, best_svm_config["scores"])
 
-    with open("configs/best_svm_config.json", "w") as f:
-        json.dump(best_svm_config, f)
+    with open("models/svm.json", "w") as f:
+        json.dump(best_svm_config["model"], f, indent=4)
 
     best_svm_config.pop("scores")
     best_svm_config.pop("model")

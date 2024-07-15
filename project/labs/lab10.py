@@ -43,7 +43,7 @@ from project.classifiers.gaussian_mixture_model import GaussianMixtureModel
 from project.figures.plots import plot, plot_surface
 from project.figures.rich import table
 from project.funcs.base import load_data, split_db_2to1
-from project.funcs.dcf import bayes_error_plot, dcf
+from project.funcs.dcf import bayes_error, dcf
 
 
 def lab10(DATA: str):
@@ -80,14 +80,14 @@ def lab10(DATA: str):
 
         for components_false in num_components:
             for components_true in num_components:
-                gmm = GaussianMixtureModel(X_train, y_train, X_val)
+                gmm = GaussianMixtureModel(X_train, y_train, X_val, y_val)
                 gmm.train(
                     apply_lbg=True,
                     num_components=[components_false, components_true],
                     cov_type="full",
                     psi_eig=0.01,
                 )
-                scores = gmm.log_likelihood_ratio
+                scores = gmm.llr
                 min_dcf = dcf(scores, y_val, PRIOR, "min").item()
 
                 min_dcfs_with_combinations.append(
@@ -98,6 +98,13 @@ def lab10(DATA: str):
                     }
                 )
 
+                # Save every combination for lab 11
+                with open(
+                    f"models/_full_T{components_true:02d}_F{components_false:02d}.json",
+                    "w",
+                ) as f:
+                    json.dump(gmm.to_json(), f)
+
                 if min_dcf < best_gmm_config["min_dcf"]:
                     best_gmm_config.update(
                         {
@@ -106,7 +113,7 @@ def lab10(DATA: str):
                             "act_dcf": dcf(scores, y_val, PRIOR, "optimal").item(),
                             "components_false": components_false,
                             "components_true": components_true,
-                            "scores": scores.tolist(),
+                            "scores": scores,
                             "model": gmm.to_json(),
                         }
                     )
@@ -139,14 +146,14 @@ def lab10(DATA: str):
 
         for components_false in num_components:
             for components_true in num_components:
-                gmm = GaussianMixtureModel(X_train, y_train, X_val)
+                gmm = GaussianMixtureModel(X_train, y_train, X_val, y_val)
                 gmm.train(
                     apply_lbg=True,
                     num_components=[components_false, components_true],
                     cov_type="diagonal",
                     psi_eig=0.01,
                 )
-                scores = gmm.log_likelihood_ratio
+                scores = gmm.llr
                 min_dcf = dcf(scores, y_val, PRIOR, "min").item()
 
                 min_dcfs_with_combinations.append(
@@ -157,6 +164,13 @@ def lab10(DATA: str):
                     }
                 )
 
+                # Save every combination for lab 11
+                with open(
+                    f"models/_diag_T{components_true:02d}_F{components_false:02d}.json",
+                    "w",
+                ) as f:
+                    json.dump(gmm.to_json(), f)
+
                 if min_dcf < best_gmm_config["min_dcf"]:
                     best_gmm_config.update(
                         {
@@ -165,7 +179,7 @@ def lab10(DATA: str):
                             "act_dcf": dcf(scores, y_val, PRIOR, "optimal").item(),
                             "components_false": components_false,
                             "components_true": components_true,
-                            "scores": scores.tolist(),
+                            "scores": scores,
                             "model": gmm.to_json(),
                         }
                     )
@@ -185,8 +199,11 @@ def lab10(DATA: str):
         yticks=num_components,
     )
 
-    with open("configs/best_gmm_config.json", "w") as f:
-        json.dump(best_gmm_config, f)
+    with open("models/gmm.json", "w") as f:
+        json.dump(best_gmm_config["model"], f, indent=4)
+
+    with open("scores/gmm.npy", "wb") as f:
+        np.save(f, arr=best_gmm_config["scores"])
 
     scores = best_gmm_config.pop("scores")
     model = best_gmm_config.pop("model")
@@ -196,8 +213,23 @@ def lab10(DATA: str):
 
     # Analyze the best combinations of SVM, LogReg and GMM
 
-    best_log_reg_config = json.load(open("configs/best_log_reg_config.json"))
-    best_svm_config = json.load(open("configs/best_svm_config.json"))
+    try:
+        f = open("scores/log_reg.npy", "rb")
+    except FileNotFoundError:
+        console.print("[red]Please run Lab8 first.")
+        return
+    else:
+        with f:
+            scores_log_reg = np.load(f)
+
+    try:
+        f = open("scores/svm.npy", "rb")
+    except FileNotFoundError:
+        console.print("[red]Please run Lab9 first.")
+        return
+    else:
+        with f:
+            scores_svm = np.load(f)
 
     table(
         console,
@@ -205,51 +237,43 @@ def lab10(DATA: str):
         {
             "DCF": ["min", "act"],
             "GMM": [best_gmm_config["min_dcf"], best_gmm_config["act_dcf"]],
-            "LogReg": [best_log_reg_config["min_dcf"], best_log_reg_config["act_dcf"]],
-            "SVM": [best_svm_config["min_dcf"], best_svm_config["act_dcf"]],
+            "LogReg": [
+                dcf(scores_log_reg, y_val, PRIOR, "min").item(),
+                dcf(scores_log_reg, y_val, PRIOR, "optimal").item(),
+            ],
+            "SVM": [
+                dcf(scores_svm, y_val, PRIOR, "min").item(),
+                dcf(scores_svm, y_val, PRIOR, "optimal").item(),
+            ],
         },
     )
 
     # Qualitative analysis on different applications for GMM
-
-    log_odds, act_dcf_gmm, min_dcf_gmm = bayes_error_plot(
+    log_odds, act_dcf_gmm, min_dcf_gmm = bayes_error(
         np.array(best_gmm_config["scores"]), y_val
     )
 
     # Qualitative analysis on different applications for LogReg
-
-    log_odds, act_dcf_log_reg, min_dcf_log_reg = bayes_error_plot(
-        np.array(best_log_reg_config["scores"]), y_val
-    )
+    log_odds, act_dcf_log_reg, min_dcf_log_reg = bayes_error(scores_log_reg, y_val)
 
     # Qualitative analysis on different applications for SVM
-
-    log_odds, act_dcf_svm, min_dcf_svm = bayes_error_plot(
-        np.array(best_svm_config["scores"]), y_val
-    )
+    log_odds, act_dcf_svm, min_dcf_svm = bayes_error(scores_svm, y_val)
 
     plot(
         {
-            "GMM": act_dcf_gmm.tolist(),
-            "LogReg": act_dcf_log_reg.tolist(),
-            "SVM": act_dcf_svm.tolist(),
+            "GMM - actDCF": act_dcf_gmm.tolist(),
+            "GMM - minDCF": min_dcf_gmm.tolist(),
+            "LogReg - actDCF": act_dcf_log_reg.tolist(),
+            "LogReg - minDCF": min_dcf_log_reg.tolist(),
+            "SVM - actDCF": act_dcf_svm.tolist(),
+            "SVM - minDCF": min_dcf_svm.tolist(),
         },
         log_odds,
-        file_name="models_act_dcf",
+        colors=["green", "green", "orange", "orange", "purple", "purple"],
+        linestyles=["-", "--", "-", "--", "-", "--"],
+        file_name="best_models_dcf",
         xlabel="Effective prior log odds",
         ylabel="DCF",
         marker="",
-    )
-
-    plot(
-        {
-            "GMM": min_dcf_gmm.tolist(),
-            "LogReg": min_dcf_log_reg.tolist(),
-            "SVM": min_dcf_svm.tolist(),
-        },
-        log_odds,
-        file_name="models_min_dcf",
-        xlabel="Effective prior log odds",
-        ylabel="DCF",
-        marker="",
+        figsize=(10, 7.5),
     )

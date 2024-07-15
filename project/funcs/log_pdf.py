@@ -44,7 +44,7 @@ def log_pdf_gaussian(X: npt.NDArray, mu: npt.NDArray, C: npt.NDArray) -> npt.NDA
 
 def log_pdf_gmm(
     X: npt.NDArray, gmm: list[tuple[npt.NDArray, npt.NDArray, npt.NDArray]]
-):
+) -> npt.NDArray:
     """Calculates the logarithm of the gaussian mixture model density function
 
     Args:
@@ -59,4 +59,4 @@ def log_pdf_gmm(
 
     S = np.vstack(S)
 
-    return sp.logsumexp(S, axis=0)
+    return sp.logsumexp(S, axis=0)  # type: ignore

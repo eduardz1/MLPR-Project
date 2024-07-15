@@ -1,5 +1,5 @@
 """
-# Calibration and Fusion
+# Calibration and Evaluation
 
 Consider the different classifiers that you trained in previous laboratories.
 For each of the main methods (GMM, logistic regression, SVM — see Laboratory 10)
@@ -68,6 +68,9 @@ evaluating the models that we already trained).
 """
 
 import json
+import math
+import os
+from functools import partial
 from typing import Literal
 
 import numpy as np
@@ -75,41 +78,33 @@ import numpy.typing as npt
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TimeElapsedColumn
 
+from project.classifiers.gaussian_mixture_model import GaussianMixtureModel
 from project.classifiers.logistic_regression import LogisticRegression
+from project.classifiers.support_vector_machine import SupportVectorMachine
 from project.figures.plots import plot
 from project.figures.rich import table
-from project.funcs.base import load_data, split_db_2to1, vrow
-from project.funcs.dcf import bayes_error_plot, dcf
+from project.funcs.base import load_data, quadratic_feature_expansion, split_db_2to1
+from project.funcs.dcf import bayes_error, dcf
+from project.funcs.kfolds import kfolds
 
 TARGET_PRIOR = 0.1
 
-BEST_LOG_REG_CONFIG = json.load(open("configs/best_log_reg_config.json"))
-BEST_SVM_CONFIG = json.load(open("configs/best_svm_config.json"))
-BEST_GMM_CONFIG = json.load(open("configs/best_gmm_config.json"))
+NUM_POINTS_BAYES_ERROR_PLOT = 100
 
-
-# Extract i-th fold from a 1-D numpy array (as for the single fold case, we do
-# not need to shuffle scores in this case, but it may be necessary if samples
-# are sorted in peculiar ways to ensure that validation and calibration sets are
-# independent and with similar characteristics)
-def extract_fold(K, X, idx):
-    return np.ascontiguousarray(
-        np.hstack([X[jdx::K] for jdx in range(K) if jdx != idx])
-    ), np.ascontiguousarray(X[idx::K])
+K_FOLDS = 5
 
 
 def find_best_prior_and_plot_bayes_error(
+    scores,
     priors: npt.NDArray,
     y_val: npt.NDArray,
-    K: int,
     model: Literal["log_reg", "svm", "gmm", "fusion"] = "fusion",
     fusion: bool = False,
 ):
     if not fusion:
-        scores = np.array(eval(f"BEST_{model.upper()}_CONFIG")["scores"])
-        min_dcf_target = dcf(scores, y_val, TARGET_PRIOR, "min").item()
-        log_odds, act_dcf_applications, min_dcf_applications = bayes_error_plot(
-            scores, y_val
+        min_dcf_target = dcf(scores[0], y_val, TARGET_PRIOR, "min").item()
+        log_odds, act_dcf_applications, min_dcf_applications = bayes_error(
+            scores[0], y_val, num_points=NUM_POINTS_BAYES_ERROR_PLOT
         )
 
     best_prior = None
@@ -131,27 +126,23 @@ def find_best_prior_and_plot_bayes_error(
     )
 
     with Progress(
-        SpinnerColumn(), *Progress.get_default_columns(), TimeElapsedColumn()
+        SpinnerColumn(),
+        *Progress.get_default_columns(),
+        TimeElapsedColumn(),
+        transient=True,
     ) as progress:
         task = progress.add_task(
             "Fusing models..." if fusion else f"Calibrating {model}...",
-            total=len(priors) * K,
+            total=len(priors) * K_FOLDS,
         )
 
-        for prior in priors:
-            calibrated_scores = []
-            calibrated_labels = []
-
-            calibrated_scores, calibrated_labels = kfold_calibration(
-                model,
+        for pi in priors:
+            calibrated_scores, calibrated_labels = kfolds(
+                scores,
                 y_val,
-                K,
-                fusion,
-                progress,
-                task,
-                prior,
-                calibrated_scores,
-                calibrated_labels,
+                partial(progress.update, task_id=task, advance=1),
+                pi,
+                K_FOLDS,
             )
 
             act_dcf = dcf(
@@ -160,12 +151,14 @@ def find_best_prior_and_plot_bayes_error(
 
             if act_dcf < best_act_dcf_target:
                 best_act_dcf_target = act_dcf
-                best_prior = prior
+                best_prior = pi
                 best_calibrated_scores = calibrated_scores
                 best_calibrated_labels = calibrated_labels
 
-        log_odds, act_dcf_applications, min_dcf_applications = bayes_error_plot(
-            best_calibrated_scores, best_calibrated_labels
+        log_odds, act_dcf_applications, min_dcf_applications = bayes_error(
+            best_calibrated_scores,
+            best_calibrated_labels,
+            num_points=NUM_POINTS_BAYES_ERROR_PLOT,
         )
 
         if fusion:
@@ -174,10 +167,12 @@ def find_best_prior_and_plot_bayes_error(
         else:
             applications["actDCF (post calibration)"] = act_dcf_applications.tolist()
 
+        progress.console.print(f"[cyan]Best prior for {model}: {best_prior:.1f}")
+
         plot(
             applications,
             log_odds,
-            colors=["b", "b"] if fusion else ["b", "b", "b"],
+            colors=["purple", "purple"] if fusion else ["purple", "purple", "purple"],
             linestyles=["dashed", "solid"] if fusion else ["dotted", "dashed", "solid"],
             file_name=f"calibration/{model}",
             xlabel="Effective Prior Log Odds",
@@ -185,147 +180,310 @@ def find_best_prior_and_plot_bayes_error(
             marker="",
         )
 
-        if fusion:
-            return best_prior, best_act_dcf_target
-        else:
-            return best_prior, best_act_dcf_target, min_dcf_target
-
-
-def kfold_calibration(
-    model,
-    y_val,
-    K,
-    fusion,
-    progress,
-    task,
-    prior,
-    calibrated_scores,
-    calibrated_labels,
-):
-    if fusion:
-        best_log_reg_scores = np.array(BEST_LOG_REG_CONFIG["scores"])
-        best_svm_scores = np.array(BEST_SVM_CONFIG["scores"])
-        best_gmm_scores = np.array(BEST_GMM_CONFIG["scores"])
-    else:
-        scores = np.array(eval(f"BEST_{model.upper()}_CONFIG")["scores"])
-
-    for i in range(K):
-        LCAL, LVAL = extract_fold(K, y_val, i)
-
-        if fusion:
-            SCAL_L, SVAL_L = extract_fold(K, best_log_reg_scores, i)
-            SCAL_S, SVAL_S = extract_fold(K, best_svm_scores, i)
-            SCAL_G, SVAL_G = extract_fold(K, best_gmm_scores, i)
-
-            SCAL = np.vstack([SCAL_L, SCAL_S, SCAL_G])
-            SVAL = np.vstack([SVAL_L, SVAL_S, SVAL_G])
-        else:
-            SCAL, SVAL = extract_fold(K, scores, i)
-
-            SCAL = vrow(SCAL)
-            SVAL = vrow(SVAL)
-
-        log_reg = LogisticRegression(SCAL, LCAL, SVAL, LVAL)
-
-        log_reg.train(0, prior, prior_weighted=True)
-
-        calibrated_scores.append(log_reg.llr)
-        calibrated_labels.append(LVAL)
-
-        progress.update(task, advance=1)
-
-    calibrated_scores = np.hstack(calibrated_scores)
-    calibrated_labels = np.hstack(calibrated_labels)
-    return calibrated_scores, calibrated_labels
+        return (
+            best_prior,
+            best_act_dcf_target,
+            None if fusion else min_dcf_target,
+            applications,
+            log_odds,
+        )
 
 
 def lab11(DATA: str):
     console = Console()
 
-    X, y = load_data(DATA)
+    np.set_printoptions(precision=3, suppress=True)
 
-    (_, _), (_, y_val) = split_db_2to1(X.T, y)
+    X, y = load_data(DATA)
+    (X_eval, y_eval) = load_data("data/evalData.txt")
+
+    (X_train, y_train), (_, y_val) = split_db_2to1(X.T, y)
 
     priors = np.linspace(0.1, 0.9, 9)
 
-    K = 5
+    # region Load models and scores
 
-    models = [
-        {
-            "model": "log_reg",
+    try:
+        f = open("scores/log_reg.npy", "rb")
+        g = open("models/log_reg.json", "r")
+    except FileNotFoundError:
+        console.print("[red]Please run lab8 first.")
+        return
+    else:
+        with f:
+            BEST_LOG_REG_SCORES = np.load(f, allow_pickle=True)
+        with g:
+            LOG_REG = LogisticRegression.from_json(json.load(g))
+    try:
+        f = open("scores/svm.npy", "rb")
+        g = open("models/svm.json", "r")
+    except FileNotFoundError:
+        console.print("[red]Please run lab9 first.")
+        return
+    else:
+        with f:
+            BEST_SVM_SCORES = np.load(f, allow_pickle=True)
+        with g:
+            SVM = SupportVectorMachine.from_json(json.load(g))
+    try:
+        f = open("scores/gmm.npy", "rb")
+        g = open("models/gmm.json", "r")
+
+        files = [file for file in os.listdir("models") if file.startswith("_")]
+
+        ALL_GMM = {}
+        for file in files:
+            with open(os.path.join("models", file), "r") as h:
+                ALL_GMM[file] = h.read()
+
+        ALL_GMM = {
+            k: GaussianMixtureModel.from_json(json.loads(v)) for k, v in ALL_GMM.items()
+        }
+    except FileNotFoundError:
+        console.print("[red]Please run lab10 first.")
+        return
+    else:
+        with f:
+            BEST_GMM_SCORES = np.load(f, allow_pickle=True)
+        with g:
+            GMM = GaussianMixtureModel.from_json(json.load(g))
+
+    LOG_REG.X_train = (
+        quadratic_feature_expansion(X_train) if LOG_REG._quadratic else X_train
+    )
+    LOG_REG.y_train = y_train
+    LOG_REG.X_val = (
+        quadratic_feature_expansion(X_eval.T) if LOG_REG._quadratic else X_eval.T
+    )
+    LOG_REG.y_val = y_eval
+
+    SVM.X_train = X_train
+    SVM.y_train = y_train
+    SVM.X_val = X_eval.T
+    SVM.y_val = y_eval
+
+    GMM.X_train = X_train
+    GMM.y_train = y_train
+    GMM.X_val = X_eval.T
+    GMM.y_val = y_eval
+
+    models = {
+        "log_reg": ([LOG_REG], [BEST_LOG_REG_SCORES]),
+        "svm": ([SVM], [BEST_SVM_SCORES]),
+        "gmm": ([GMM], [BEST_GMM_SCORES]),
+        "fusion": (
+            [LOG_REG, SVM, GMM],
+            [BEST_LOG_REG_SCORES, BEST_SVM_SCORES, BEST_GMM_SCORES],
+        ),
+    }
+
+    # region Calibration
+
+    stats = {
+        "log_reg": {
             "prior": None,
             "actDCF": np.inf,
             "minDCF": np.inf,
+            "applications": [],
         },
-        {
-            "model": "svm",
+        "svm": {
             "prior": None,
             "actDCF": np.inf,
             "minDCF": np.inf,
+            "applications": [],
         },
-        {
-            "model": "gmm",
+        "gmm": {
             "prior": None,
             "actDCF": np.inf,
             "minDCF": np.inf,
+            "applications": [],
         },
-        {
-            "model": "fusion",
+        "fusion": {
             "prior": None,
             "actDCF": np.inf,
+            "applications": [],
         },
-    ]
+    }
 
-    log_reg_cal_prior, log_reg_act_dcf, log_reg_min_dcf = (  # type: ignore
-        find_best_prior_and_plot_bayes_error(priors, y_val, K, "log_reg")
-    )
-    models[0]["actDCF"] = log_reg_act_dcf
-    models[0]["minDCF"] = log_reg_min_dcf
-    models[0]["prior"] = log_reg_cal_prior
+    for k, (_, scores) in models.items():
+        pi, act_dcf, min_dcf, apps, log_odds = find_best_prior_and_plot_bayes_error(
+            scores, priors, y_val, k, k == "fusion"  # type: ignore
+        )
+        stats[k]["actDCF"] = act_dcf
+        if k != "fusion":
+            stats[k]["minDCF"] = min_dcf
+        stats[k]["prior"] = pi
+        stats[k]["applications"] = apps
 
-    svm_cal_prior, svm_act_dcf, svm_min_dcf = find_best_prior_and_plot_bayes_error(  # type: ignore
-        priors, y_val, K, "svm"
-    )
-    models[1]["actDCF"] = svm_act_dcf
-    models[1]["minDCF"] = svm_min_dcf
-    models[1]["prior"] = svm_cal_prior
+    # # table(console, "Best Model after Calibration", delivery_model)
 
-    gmm_cal_prior, gmm_act_dcf, gmm_min_dcf = find_best_prior_and_plot_bayes_error(  # type: ignore
-        priors, y_val, K, "gmm"
-    )
-    models[2]["actDCF"] = gmm_act_dcf
-    models[2]["minDCF"] = gmm_min_dcf
-    models[2]["prior"] = gmm_cal_prior
-
-    fusion_cal_prior, fusion_act_dcf = find_best_prior_and_plot_bayes_error(  # type: ignore
-        priors, y_val, K, fusion=True
-    )
-    models[3]["actDCF"] = fusion_act_dcf
-    models[3]["prior"] = fusion_cal_prior
+    delivery_model = min(stats.items(), key=lambda item: item[1]["actDCF"])
 
     table(
-        console, "Best Model after Calibration", min(models, key=lambda x: x["actDCF"])
+        console,
+        "Best Model after Calibration",
+        {
+            "Model": delivery_model[0],
+            "actDCF": delivery_model[1]["actDCF"],
+            "minDCF": delivery_model[1]["minDCF"],
+            "Prior": delivery_model[1]["prior"],
+        },
     )
 
-    # (X_eval, y_eval) = load_data("data/evalData.txt")
+    # Plot the combination of Bayes Error Plots
+    plot(
+        {
+            "LogReg - actDCF (post calibration)": stats["log_reg"]["applications"][
+                "actDCF (post calibration)"
+            ],
+            "LogReg - actDCF (pre calibration)": stats["log_reg"]["applications"][
+                "actDCF (pre calibration)"
+            ],
+            "LogReg - minDCF": stats["log_reg"]["applications"]["minDCF"],
+            "SVM - actDCF (post calibration)": stats["svm"]["applications"][
+                "actDCF (post calibration)"
+            ],
+            "SVM - actDCF (pre calibration)": stats["svm"]["applications"][
+                "actDCF (pre calibration)"
+            ],
+            "SVM - minDCF": stats["svm"]["applications"]["minDCF"],
+            "GMM - actDCF (post calibration)": stats["gmm"]["applications"][
+                "actDCF (post calibration)"
+            ],
+            "GMM - actDCF (pre calibration)": stats["gmm"]["applications"][
+                "actDCF (pre calibration)"
+            ],
+            "GMM - minDCF": stats["gmm"]["applications"]["minDCF"],
+            "Fusion - actDCF": stats["fusion"]["applications"]["actDCF (fused scores)"],
+            "Fusion - minDCF": stats["fusion"]["applications"]["minDCF (fused scores)"],
+        },
+        log_odds,
+        colors=[
+            "orange",
+            "orange",
+            "orange",
+            "purple",
+            "purple",
+            "purple",
+            "green",
+            "green",
+            "green",
+            "pink",
+            "pink",
+        ],
+        linestyles=["-", ":", "--", "-", ":", "--", "-", ":", "--", "-", "--"],
+        file_name="calibration/complete",
+        xlabel="Effective prior log odds",
+        ylabel="DCF",
+        marker="",
+        figsize=(10, 7.5),
+    )
 
-    # log_reg = delivery_model["calibration_model"]
+    # region Evaluation
 
-    # log_reg.X_val = X_eval.T
-    # log_reg.y_val = y_eval
+    for k, (model, scores) in models.items():
+        SCAL = np.vstack(scores)
+        SVAL = np.vstack([m.llr for m in model])
 
-    # log_reg.train(0, delivery_model["prior"], prior_weighted=True)
+        cl = LogisticRegression(SCAL, y_val, SVAL, y_eval)
 
-    # log_odds, act_dcf, min_dcf = bayes_error_plot(log_reg.llr, y_eval)
+        cl.train(0, stats[k]["prior"])
 
-    # plot(
-    #     {
-    #         "actDCF": act_dcf,
-    #         "minDCF": min_dcf,
-    #     },
-    #     log_odds,
-    #     file_name="delivery_error_plot",
-    #     xlabel="Effective Prior Log Odds",
-    #     ylabel="DCF",
-    #     marker="",
-    # )
+        cal_scores = np.hstack([cl.llr])
+        cal_labels = np.hstack([y_eval])
+
+        log_odds, act_dcf, min_dcf = bayes_error(cal_scores, cal_labels)
+
+        stats[k]["actDCF"] = dcf(cal_scores, cal_labels, TARGET_PRIOR, "optimal").item()
+        stats[k]["minDCF"] = dcf(cal_scores, cal_labels, TARGET_PRIOR, "min").item()
+        stats[k]["applications"] = {
+            "actDCF": act_dcf.tolist(),
+            "minDCF": min_dcf.tolist(),
+        }
+
+    # 1 - Plot Bayes Error Plot for our delivery model
+
+    plot(
+        stats[delivery_model[0]]["applications"],
+        log_odds,
+        colors=["purple", "purple"],
+        linestyles=["-", "--"],
+        file_name="evaluation/delivery",
+        xlabel="Effective Prior Log Odds",
+        ylabel="DCF",
+        marker="",
+    )
+
+    # 2 - Evaluate the four models and plot the Bayes Error Plots for actual DCF
+
+    plot(
+        {
+            "LogReg - actDCF": stats["log_reg"]["applications"]["actDCF"],
+            "SVM - actDCF": stats["svm"]["applications"]["actDCF"],
+            "GMM - actDCF": stats["gmm"]["applications"]["actDCF"],
+            "Fusion - actDCF": stats["fusion"]["applications"]["actDCF"],
+        },
+        log_odds,
+        colors=["orange", "purple", "green", "pink"],
+        file_name="evaluation/actDCF",
+        xlabel="Effective Prior Log Odds",
+        ylabel="DCF",
+        marker="",
+    )
+
+    # 3 - Plot Bayes Error plot for the three systems for actual and min DCF
+
+    plot(
+        {
+            "LogReg - actDCF": stats["log_reg"]["applications"]["actDCF"],
+            "LogReg - minDCF": stats["log_reg"]["applications"]["minDCF"],
+            "SVM - actDCF": stats["svm"]["applications"]["actDCF"],
+            "SVM - minDCF": stats["svm"]["applications"]["minDCF"],
+            "GMM - actDCF": stats["gmm"]["applications"]["actDCF"],
+            "GMM - minDCF": stats["gmm"]["applications"]["minDCF"],
+        },
+        log_odds,
+        colors=["orange", "orange", "purple", "purple", "green", "green"],
+        linestyles=["-", "--", "-", "--", "-", "--"],
+        file_name="evaluation/act_min_DCF",
+        xlabel="Effective Prior Log Odds",
+        ylabel="DCF",
+        marker="",
+    )
+
+    table(
+        console,
+        "minDCF and actDCF for the three models",
+        {
+            "DCF": ["minimum", "actual"],
+            "LogReg": [stats["log_reg"]["minDCF"], stats["log_reg"]["actDCF"]],
+            "SVM": [stats["svm"]["minDCF"], stats["svm"]["actDCF"]],
+            "GMM": [stats["gmm"]["minDCF"], stats["gmm"]["actDCF"]],
+        },
+    )
+
+    # 4 - Evaluate all combinations of GMM again
+
+    full = np.empty((6, 6))
+    diag = np.empty((6, 6))
+
+    for k, gmm in ALL_GMM.items():
+        gmm.X_val = X_eval.T
+
+        llr = gmm.llr
+
+        min_dcf = dcf(llr, y_eval, TARGET_PRIOR, "min").item()
+
+        true = int(math.log2(int(k[7:9])))
+        false = int(math.log2(int(k[11:13])))
+
+        if k[1] == "d":
+            diag[true][false] = min_dcf
+        else:
+            full[true][false] = min_dcf
+
+    table(
+        console,
+        "Comparison with other GMMs (true x false)",
+        {"Full": full, "Diagonal": diag},
+    )

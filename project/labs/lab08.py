@@ -82,7 +82,7 @@ from rich.console import Console
 from project.classifiers.logistic_regression import LogisticRegression
 from project.figures.plots import plot
 from project.figures.rich import table
-from project.funcs.base import load_data, quadratic_feature_expansion, split_db_2to1
+from project.funcs.base import load_data, split_db_2to1
 from project.funcs.dcf import dcf
 
 
@@ -106,18 +106,14 @@ def compute_logistic_regression(
         "actDCF": [],
     }
 
-    if quadratic:
-        X_train = quadratic_feature_expansion(X_train)
-        X_val = quadratic_feature_expansion(X_val)
-
     if centered:
-        X_train = X_train - X_train.mean(axis=1, keepdims=True)
-        X_val = X_val - X_val.mean(axis=1, keepdims=True)
+        X_train -= X_train.mean(axis=1, keepdims=True)
+        X_val -= X_val.mean(axis=1, keepdims=True)
 
-    cl = LogisticRegression(X_train, y_train, X_val, y_val)
+    cl = LogisticRegression(X_train, y_train, X_val, y_val, quadratic)
 
     for l in lambdas:
-        f = cl.train(l, prior, prior_weighted)
+        f = cl.train(l, prior if prior_weighted else None)
 
         min_dcf = dcf(cl.llr, y_val, prior, "min").item()
         act_dcf = dcf(cl.llr, y_val, prior, "optimal").item()
@@ -137,7 +133,7 @@ def compute_logistic_regression(
                     "centered": centered,
                     "min_dcf": min_dcf,
                     "act_dcf": act_dcf,
-                    "scores": cl.llr.tolist(),
+                    "scores": cl.llr,
                     "model": cl.to_json(),
                 }
             )
@@ -181,6 +177,8 @@ def lab08(DATA: str):
             "actDCF": applications["actDCF"],
         },
         applications["lambda"],
+        colors=["green", "purple"],
+        linestyles=["--", "-"],
         file_name="logreg/lambda_vs_dcf",
         xscale="log",
         xlabel="lambda",
@@ -203,6 +201,8 @@ def lab08(DATA: str):
         },
         applications["lambda"],
         file_name="logreg/lambda_vs_dcf_50",
+        colors=["green", "purple"],
+        linestyles=["--", "-"],
         xscale="log",
         xlabel="lambda",
         ylabel="DCF",
@@ -229,6 +229,8 @@ def lab08(DATA: str):
         },
         applications["lambda"],
         file_name="logreg/lambda_vs_dcf_prior",
+        colors=["green", "purple"],
+        linestyles=["--", "-"],
         xscale="log",
         xlabel="lambda",
         ylabel="DCF",
@@ -249,17 +251,7 @@ def lab08(DATA: str):
 
     table(console, "Quadratic logistic regression", applications)
 
-    plot(
-        {
-            "minDCF": applications["minDCF"],
-            "actDCF": applications["actDCF"],
-        },
-        applications["lambda"],
-        file_name="logreg/lambda_vs_dcf_quadratic",
-        xscale="log",
-        xlabel="lambda",
-        ylabel="DCF",
-    )
+    applications_quadratic = applications.copy()
 
     # Quadratic feature expanded and prior weighted
     applications = compute_logistic_regression(
@@ -278,11 +270,15 @@ def lab08(DATA: str):
 
     plot(
         {
-            "minDCF": applications["minDCF"],
-            "actDCF": applications["actDCF"],
+            "minDCF (prior weighted)": applications["minDCF"],
+            "minDCF": applications_quadratic["minDCF"],
+            "actDCF (prior weighted)": applications["actDCF"],
+            "actDCF": applications_quadratic["actDCF"],
         },
         applications["lambda"],
-        file_name="logreg/lambda_vs_dcf_quadratic_prior",
+        file_name="logreg/lambda_vs_dcf_quadratic",
+        colors=["yellowgreen", "green", "violet", "purple"],
+        linestyles=[":", "--", "-.", "-"],
         xscale="log",
         xlabel="lambda",
         ylabel="DCF",
@@ -310,13 +306,18 @@ def lab08(DATA: str):
         },
         applications["lambda"],
         file_name="logreg/lambda_vs_dcf_centered",
+        colors=["green", "purple"],
+        linestyles=["--", "-"],
         xscale="log",
         xlabel="lambda",
         ylabel="DCF",
     )
 
-    with open("configs/best_log_reg_config.json", "w") as f:
-        json.dump(best_log_reg_config, f)
+    with open("scores/log_reg.npy", "wb") as f:
+        np.save(f, arr=best_log_reg_config["scores"])
+
+    with open("models/log_reg.json", "w") as f:
+        json.dump(best_log_reg_config["model"], f, indent=4)
 
     best_log_reg_config.pop("scores")
     best_log_reg_config.pop("model")
