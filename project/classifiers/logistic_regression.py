@@ -12,6 +12,23 @@ from project.funcs.base import atleast_1d, quadratic_feature_expansion, vrow
 
 
 class LogisticRegression(Classifier):
+    """
+    Logistic Regression Classifier.
+
+    Attributes:
+        llr (npt.NDArray[np.float64]): The posterior log likelihood ratio of the classifier.
+        accuracy (float): The accuracy of the classifier.
+        error_rate (float): The error rate of the classifier.
+
+        _bias (float): The bias term of the classifier.
+        _f (float): The value of the objective function at the optimal point.
+        _fitted (bool): Whether the classifier has been fitted or not.
+        _prior (float): The prior probability of the positive class.
+        _quadratic (bool): Whether to map the features to a quadratic space before
+            training the classifier.
+        _weights (npt.NDArray[np.float64]): The weights of the classifier.
+        _S (npt.NDArray[np.float64]): The scores of the classifier.
+    """
 
     def __init__(self, quadratic: bool = False) -> None:
         """

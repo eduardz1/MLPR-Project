@@ -23,7 +23,7 @@ def extract_fold(X: npt.NDArray, i: int, K: int):
     ), np.ascontiguousarray(X[i::K])
 
 
-def kfolds(
+def k_folds_calibration(
     scores: list[npt.NDArray],
     y_val: npt.NDArray,
     progress: Callable,

@@ -121,6 +121,10 @@ class SingleGMM(Classifier):
     Attributes:
         params (list[tuple[npt.NDArray, npt.NDArray, npt.NDArray]]): List of
             tuples containing the weights, means, and covariances of the GMM.
+
+        _type (str): The type of covariance matrix.
+        _fitted (bool): Whether the classifier has been fitted or not.
+        _S (npt.NDArray): Scores of the classifier.
     """
 
     params: list[tuple[npt.NDArray, npt.NDArray, npt.NDArray]] = field(
@@ -164,6 +168,7 @@ class SingleGMM(Classifier):
         Returns:
             SingleGMM: The trained Single Gaussian Mixture Model.
         """
+        self._type = cov_type
 
         if apply_lbg:
             mu = vcol(np.mean(X, axis=1))
@@ -297,10 +302,15 @@ class SingleGMM(Classifier):
             dict: The JSON like dictionary
         """
         return {
+            "type": self._type,
             "params": [
-                {"w": w.tolist(), "mu": mu.tolist(), "C": C.tolist()}
+                {
+                    "w": w.tolist(),
+                    "mu": mu.tolist(),
+                    "C": C.tolist() if self._type == "full" else np.diag(C).tolist(),
+                }
                 for w, mu, C in self.params
-            ]
+            ],
         }
 
     @staticmethod
@@ -315,8 +325,13 @@ class SingleGMM(Classifier):
             SingleGMM: The deserialized Single Gaussian Mixture Model
         """
         gmm = SingleGMM.__new__(SingleGMM)
+        gmm._type = data["type"]
         gmm.params = [
-            (np.array(d["w"]), np.array(d["mu"]), np.array(d["C"]))
+            (
+                np.array(d["w"]),
+                np.array(d["mu"]),
+                np.array(d["C"]) if gmm._type == "full" else np.diag(np.array(d["C"])),
+            )
             for d in data["params"]
         ]
         return gmm

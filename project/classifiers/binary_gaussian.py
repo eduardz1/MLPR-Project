@@ -17,8 +17,6 @@ from project.funcs.pca import pca
 class BinaryGaussian(Classifier):
     """
     Attributes:
-        type (Literal["naive", "tied", "multivariate"]): Type of classifier to use.
-
         C (list[npt.NDArray]): Covariance matrices of the classes.
         mu (list[npt.NDArray]): Means of the classes.
         corr (list[npt.NDArray]): Correlation matrices of the classes.
@@ -26,6 +24,7 @@ class BinaryGaussian(Classifier):
         accuracy (float): Accuracy of the classifier.
         error_rate (float): Error rate of the classifier.
 
+        _type (Literal["naive", "tied", "multivariate"]): Type of classifier to use.
         _S (npt.NDArray): Scores of the classifier.
         _pca_dims (int): Number of dimensions to keep after PCA.
         _slicer (slice): Slice to apply to the data.
@@ -33,7 +32,7 @@ class BinaryGaussian(Classifier):
     """
 
     def __init__(self, classifier: Literal["naive", "tied", "multivariate"]) -> None:
-        self.type = classifier
+        self._type = classifier
         self._fitted = False
 
     def scores(self, X):
@@ -102,7 +101,7 @@ class BinaryGaussian(Classifier):
         self.mu = [np.mean(split[k], axis=0) for k in [0, 1]]
         self.corr = [corr(split[k].T) for k in [0, 1]]
 
-        if self.type == "tied":
+        if self._type == "tied":
             Sw = np.average(  # Within-class covariance matrix
                 [self.C[k] for k in [0, 1]],
                 axis=0,
@@ -112,7 +111,7 @@ class BinaryGaussian(Classifier):
             # If tied then the ML estimate of the covariance matrix is
             # the within class covariance matrix
             self.C = [Sw, Sw]
-        elif self.type == "naive":
+        elif self._type == "naive":
             # If naive then the ML estimate of the covariance matrix is
             # the diagonal of the sample covariance matrix
             self.C = [np.diag(np.diag(self.C[k])) for k in [0, 1]]
@@ -163,9 +162,18 @@ class BinaryGaussian(Classifier):
             json.load(data) if isinstance(data, TextIOWrapper) else json.loads(data)
         )
 
-        cl = BinaryGaussian(decoded["classifier"])
+        cl = BinaryGaussian(decoded["type"])
+        cl._type = decoded["type"]
         cl.mu = decoded["mu"]
-        cl.C = decoded["C"]
+        cl.C = (
+            decoded["C"]
+            if cl._type == "multivariate"
+            else (
+                [np.diag(C) for C in decoded["C"]]
+                if cl._type == "naive"
+                else [decoded["C"], decoded["C"]]
+            )
+        )
         cl._pca_dims = decoded["pca_dims"]
         cl._slicer = decoded["slicer"]
         cl._fitted = True
@@ -177,9 +185,17 @@ class BinaryGaussian(Classifier):
             raise ValueError("Classifier has not been fitted yet.")
 
         data = {
-            "classifier": self.type,
+            "type": self._type,
             "mu": [mu.tolist() for mu in self.mu],
-            "C": [C.tolist() for C in self.C],
+            "C": (  # store more efficiently
+                [C.tolist() for C in self.C]
+                if self._type == "multivariate"
+                else (
+                    [np.diag(C).tolist() for C in self.C]
+                    if self._type == "naive"
+                    else [self.C[0].tolist()]
+                )
+            ),
             "pca_dims": self._pca_dims,
             "slicer": self._slicer,
         }

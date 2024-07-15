@@ -84,7 +84,7 @@ from project.figures.plots import plot
 from project.figures.rich import table
 from project.funcs.base import load_data, split_db_2to1
 from project.funcs.dcf import bayes_error, dcf
-from project.funcs.kfolds import kfolds
+from project.funcs.kfolds import k_folds_calibration
 
 TARGET_PRIOR = 0.1
 
@@ -136,7 +136,7 @@ def find_best_prior_and_plot_bayes_error(
         )
 
         for pi in priors:
-            calibrated_scores, calibrated_labels = kfolds(
+            calibrated_scores, calibrated_labels = k_folds_calibration(
                 scores,
                 y_val,
                 partial(progress.update, task_id=task, advance=1),
@@ -197,7 +197,7 @@ def lab11(DATA: str):
 
     (X_eval, y_eval) = load_data("data/evalData.txt")
 
-    (X_train, _), (_, y_val) = split_db_2to1(X.T, y)
+    (X_train, y_train), (_, y_val) = split_db_2to1(X.T, y)
 
     priors = np.linspace(0.1, 0.9, 9)
 
@@ -361,31 +361,43 @@ def lab11(DATA: str):
     # region Evaluation
     cl = LogisticRegression()
 
-    for k, (model, scores) in models.items():
-        for m in model:
-            if isinstance(m, SupportVectorMachine):
-                if SVM._svm_type != "linear":
-                    m.scores(np.ascontiguousarray(X_eval.T), X_train)
-                    continue
+    with Progress(
+        SpinnerColumn(),
+        *Progress.get_default_columns(),
+        TimeElapsedColumn(),
+        transient=True,
+    ) as progress:
+        task = progress.add_task("Evaluating the final models...", total=len(models))
 
-            m.scores(X_eval.T)
+        for k, (model, scores) in models.items():
+            for m in model:
+                if isinstance(m, SupportVectorMachine):
+                    if SVM._type != "linear":
+                        m.scores(np.ascontiguousarray(X_eval.T), X_train, y_train)
+                        continue
 
-        SCAL = np.vstack(scores)
-        SVAL = np.vstack([m.llr for m in model])
+                m.scores(X_eval.T)
 
-        cl.fit(SCAL, y_val, l=0, prior=stats[k]["prior"]).scores(SVAL)
+            SCAL = np.vstack(scores)
+            SVAL = np.vstack([m.llr for m in model])
 
-        cal_scores = np.hstack([cl.llr])
-        cal_labels = np.hstack([y_eval])
+            cl.fit(SCAL, y_val, l=0, prior=stats[k]["prior"]).scores(SVAL)
 
-        log_odds, act_dcf, min_dcf = bayes_error(cal_scores, cal_labels)
+            cal_scores = np.hstack([cl.llr])
+            cal_labels = np.hstack([y_eval])
 
-        stats[k]["actDCF"] = dcf(cal_scores, cal_labels, TARGET_PRIOR, "optimal").item()
-        stats[k]["minDCF"] = dcf(cal_scores, cal_labels, TARGET_PRIOR, "min").item()
-        stats[k]["applications"] = {
-            "actDCF": act_dcf.tolist(),
-            "minDCF": min_dcf.tolist(),
-        }
+            log_odds, act_dcf, min_dcf = bayes_error(cal_scores, cal_labels)
+
+            stats[k]["actDCF"] = dcf(
+                cal_scores, cal_labels, TARGET_PRIOR, "optimal"
+            ).item()
+            stats[k]["minDCF"] = dcf(cal_scores, cal_labels, TARGET_PRIOR, "min").item()
+            stats[k]["applications"] = {
+                "actDCF": act_dcf.tolist(),
+                "minDCF": min_dcf.tolist(),
+            }
+
+            progress.update(task_id=task, advance=1)
 
     # 1 - Plot Bayes Error Plot for our delivery model
 
