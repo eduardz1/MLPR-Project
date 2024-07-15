@@ -11,6 +11,8 @@
   set page(paper: "a4", numbering: ("1"))
   show figure.caption: set text(size: 0.8em, style: "italic")
 
+  show link: underline
+
   set heading(numbering: clean_numbering("I -", "1.a."))
   show heading: it => if it.level != 1 {
     block(width: 100%, above: 2em, below: 1em, breakable: false)[
