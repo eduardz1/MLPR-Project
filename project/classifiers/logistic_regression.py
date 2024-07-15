@@ -85,7 +85,7 @@ class LogisticRegression(Classifier):
         return self._S - np.log(self._prior / (1 - self._prior))
 
     def fit(
-        self, X, y, *, l: float, prior: float | None = None
+        self, X, y, *, l: float, prior: float | None = None  # noqa: E741
     ) -> "LogisticRegression":
         """
         Fit the logistic regression classifier using the training data and the
@@ -123,7 +123,7 @@ class LogisticRegression(Classifier):
         prior: float | None,
         DTR: npt.NDArray[np.float64],
         LTR: npt.NDArray[np.int64],
-        l: float,
+        l: float,  # noqa: E741
     ) -> tuple[float, npt.NDArray[np.float64] | None]:
         """
         Logistic Regression Objective Function

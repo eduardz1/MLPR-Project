@@ -112,7 +112,7 @@ def compute_logistic_regression(
 
     cl = LogisticRegression(quadratic)
 
-    for l in lambdas:
+    for l in lambdas:  # noqa: E741
         cl.fit(X_train, y_train, l=l, prior=prior if prior_weighted else None).predict(
             X_val, y_val
         )
