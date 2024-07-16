@@ -53,7 +53,7 @@ Perhaps surprisingly, increasing the number of components for the `True` class i
 
 The diagonal covariance model performs better than the full one and I believe that to be thanks to the fact that we are using multiple Gaussian distributions to model the data. We have seen in @filter-last-two that the `Naïve Bayes` model already performs better than the `Multivariate Gaussian` model without the last two features and these last two features are the ones that most benefit from the `GMM` model.
 
-== Best Models for Compared for Different Applications
+== Best Models Compared for Different Applications
 
 #[
   #set par(justify: false)

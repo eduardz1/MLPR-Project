@@ -9,7 +9,7 @@
 #eqcolumns(2)[
   == Linear SVM
 
-  We start by analyzing the performance of the `Linear SVM` model. we notice that the `minimum DCF` if we exclude the case with the regularization term $C = 10^(-5)$, is consistent across our range of $C$ values. The `actual DCF`, on the other hand, is more affected by the regularization term $C$ and is inversely proportional to it.
+  We start by analyzing the performance of the `Linear SVM` model. we notice that the `minimum DCF` if we exclude the case with the regularization term $C = 10^(-5)$, #footnote[No support vector has been found, i.e. $bold(alpha)^*$ = [0, ..., 0]] is consistent across our range of $C$ values. The `actual DCF`, on the other hand, is more affected by the regularization term $C$ and is inversely proportional to it.
 
   The model performs poorly compared to the ones we have analyzed before and remains poorly calibrated even with high values of $C$, the `actual DCF` seems to tend to a value of `0.5` for $C -> infinity$
 
