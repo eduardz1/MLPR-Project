@@ -197,7 +197,7 @@ def lab11(DATA: str):
 
     (X_eval, y_eval) = load_data("data/evalData.txt")
 
-    (X_train, y_train), (_, y_val) = split_db_2to1(X.T, y)
+    _, (_, y_val) = split_db_2to1(X.T, y)
 
     priors = np.linspace(0.1, 0.9, 9)
 
@@ -371,12 +371,7 @@ def lab11(DATA: str):
 
         for k, (model, scores) in models.items():
             for m in model:
-                if isinstance(m, SupportVectorMachine):
-                    if SVM._type != "linear":
-                        m.scores(np.ascontiguousarray(X_eval.T), X_train, y_train)
-                        continue
-
-                m.scores(X_eval.T)
+                m.scores(np.ascontiguousarray(X_eval.T))
 
             SCAL = np.vstack(scores)
             SVAL = np.vstack([m.llr for m in model])

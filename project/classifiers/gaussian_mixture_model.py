@@ -151,7 +151,7 @@ class SingleGMM(Classifier):
         gmm.params = [
             (
                 np.array(d["w"]),
-                np.array(d["mu"]),
+                vcol(np.array(d["mu"])),
                 np.array(d["C"]) if gmm._type == "full" else np.diag(np.array(d["C"])),
             )
             for d in data["params"]
@@ -248,7 +248,8 @@ class SingleGMM(Classifier):
             "params": [
                 {
                     "w": w.tolist(),
-                    "mu": mu.tolist(),
+                    # Save as row to make the representation more compact
+                    "mu": vrow(mu).tolist(),
                     "C": C.tolist() if self._type == "full" else np.diag(C).tolist(),
                 }
                 for w, mu, C in self.params

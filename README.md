@@ -39,7 +39,7 @@ You can also suppress the output with the `--quiet` flag.
 The project is structured as follows:
 
 - [data](data): Contains the Datasets used in the project (training/validation and evaluation).
-- [models](models): Contain the `JSON` serialized representation of the best configuration of each model for our application prior $\tilde{\pi} = 0.1$
+- [models](models): Contain the `JSON` serialized representation of the best configuration of each model for our application prior $\tilde{\pi} = 0.1$, not compressed to make them human-readable.
   - [scores](scores): The scores of each model on the application prior $\tilde{\pi} = 0.1$ will be saved here.
 - [project](project): Contains the Python module with the project code.
   - [labs](project/labs): Contains the code for each part of the project grouped by lab.

@@ -82,7 +82,7 @@
 
   After analyzing the performance of different models for our application prior $0.1$, we conclude that the best performing one is the `Prior Weighted Quadratic Logistic Regression` with a $lambda = 0.0032$ with a `minimum DCF` of `0.2300` and an `actual DCF` of `0.2852`.
 
-  The separation rule is quadratic (more specifically linear for the `expanded feature space` defined by the mapping $phi.alt$) and the distribution is assumed to have $tilde(pi) = 0.1$. // TODO: check if it makes sense
+  The separation rule is quadratic (more specifically linear for the `expanded feature space` defined by the mapping $phi.alt$) and the distribution is assumed to have $tilde(pi) = 0.1$.
 
   This result is to be expected given in particular the nonlinear separability of features 5 and 6, as we saw in @features-5-6-scatter.
 ]

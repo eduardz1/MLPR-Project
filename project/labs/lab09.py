@@ -214,7 +214,7 @@ def lab09(DATA: str):
         for C in range_c:
             scores = poly_svm.fit(
                 X_train, y_train, K=1, C=C, degree=2, c=1, xi=0
-            ).scores(X_val, X_train)
+            ).scores(X_val)
             min_dcfs.append(dcf(scores, y_val, PRIOR, "min").item())
             act_dcfs.append(dcf(scores, y_val, PRIOR, "optimal").item())
 
@@ -267,9 +267,7 @@ def lab09(DATA: str):
             min_dcfs = []
 
             for C in Cs:
-                scores = rbf_svm.fit(X_train, y_train, C=C, K=1, gamma=g).scores(
-                    X_val, X_train
-                )
+                scores = rbf_svm.fit(X_train, y_train, C=C, K=1, gamma=g).scores(X_val)
                 min_dcfs.append(dcf(scores, y_val, PRIOR, "min").item())
                 act_dcfs.append(dcf(scores, y_val, PRIOR, "optimal").item())
 
@@ -333,7 +331,7 @@ def lab09(DATA: str):
         for C in range_c:
             scores = poly_svm.fit(
                 X_train, y_train, K=1, C=C, degree=4, c=1, xi=0
-            ).scores(X_val, X_train)
+            ).scores(X_val)
             min_dcfs.append(dcf(scores, y_val, PRIOR, "min").item())
             act_dcfs.append(dcf(scores, y_val, PRIOR, "optimal").item())
 
